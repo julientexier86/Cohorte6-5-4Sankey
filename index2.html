@@ -1,0 +1,2934 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EvalNat‑Suivi de cohorte — Sankey 6e → 5e → 4e (appariement robuste)</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:#0f1720; --panel:#0b1220; --text:#e6edf3; --muted:#9fb4c9; --line:#1f2a37; --accent:#3b82f6;
+    --btn:#1c2a3a; --btn-line:#2a3e55; --badge:#132033; --badge-line:#20364f; --shadow:0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px rgba(0,0,0,0.25);
+    --radius:12px; --gap:14px; --pad:16px; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+  }
+  [data-theme="light"]{
+    --bg:#f7fafc; --card:#ffffff; --panel:#f2f6fb; --text:#0f1720; --muted:#4b5563; --line:#dbe5ef; --accent:#2563eb;
+    --btn:#e8eef6; --btn-line:#c9d7e8; --badge:#eef3fb; --badge-line:#d6e3f5; --shadow:0 1px 0 rgba(0,0,0,0.06) inset, 0 10px 30px rgba(0,0,0,0.08);
+  }
+  html,body{ height:100%; }
+  body{ margin:0; background:var(--bg); color:var(--text); }
+  .wrap{ max-width:1200px; margin:0 auto; padding:20px; }
+  .topbar{ position:sticky; top:0; z-index:5; background:rgba(247,250,252,0.95); backdrop-filter:saturate(180%) blur(10px); border-bottom:1px solid rgba(148,163,184,0.35); }
+  [data-theme="dark"] .topbar{ background:rgba(11,15,20,0.9); border-bottom:1px solid rgba(31,42,55,0.7); }
+  .topbar .inner{ max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 20px; }
+  .brand{ display:flex; gap:10px; align-items:center; font-weight:700; }
+  .brand .logo{ font-size:22px; }
+  .brand .title{ font-size:18px; }
+  .toolbar{ display:flex; gap:10px; align-items:center; }
+
+  .card{ background:var(--card); border:1px solid rgba(148,163,184,0.35); border-radius:20px; padding:var(--pad); margin:22px 0; box-shadow:0 16px 32px rgba(15,23,42,0.08); }
+  [data-theme="dark"] .card{ border-color:rgba(30,45,60,0.7); box-shadow:0 20px 36px rgba(0,0,0,0.45); }
+  .hero-card{ display:flex; flex-direction:column; gap:22px; padding:28px; margin-top:20px; }
+  .hero-top{ display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:24px; }
+  .hero-heading{ max-width:580px; }
+  .hero-heading h1{ font-size:1.6rem; margin:0 0 12px; }
+  .hero-lead{ margin:0 0 14px; font-size:1rem; line-height:1.5; color:var(--muted); }
+  .hero-badges{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .hero-steps{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:14px; }
+  .hero-step{ display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:12px; background:var(--panel); border:1px solid rgba(148,163,184,0.35); box-shadow:var(--shadow); }
+  .hero-step-icon{ font-size:1.4rem; line-height:1; margin-top:2px; }
+  .hero-step-title{ margin:0 0 4px; font-size:1rem; color:var(--text); }
+  .hero-step-text{ margin:0; font-size:0.9rem; color:var(--muted); line-height:1.45; }
+  .hero-callout{ gap:14px; }
+  .hero-callout-list{ margin:8px 0 0; padding-left:18px; color:var(--muted); line-height:1.45; }
+.controls-grid{ display:flex; flex-wrap:wrap; gap:16px; margin-top:20px; }
+.control-card{ display:flex; flex-direction:column; gap:10px; flex:1 1 260px; min-width:240px; }
+.control-card.wide{ flex:1 1 500px; min-width:420px; }
+.control-actions{ display:flex; flex-wrap:wrap; gap:10px; }
+.control-actions .btn{ flex:0 0 180px; width:180px; text-align:center; }
+.control-actions .btn[data-role="snapshot"]{ flex:0 0 120px; width:120px; }
+  .section-heading{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 0 14px; }
+  .collapsed{ display:none !important; }
+  .hero-meta{ min-width:220px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; font-size:0.85rem; color:var(--muted); }
+  .hero-meta h3{ margin:0; font-size:0.95rem; color:var(--text); }
+  .hero-meta ul{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+  .hero-meta li{ display:flex; gap:6px; align-items:flex-start; line-height:1.35; }
+  .hero-meta li span{ font-weight:600; color:var(--text); }
+  .group{ background:var(--panel); border:1px solid rgba(148,163,184,0.25); border-radius:16px; padding:14px; }
+  [data-theme="dark"] .group{ border-color:rgba(30,45,60,0.55); }
+  .group h3{ margin:0 0 10px 0; font-size:1rem; color:var(--text); display:flex; align-items:center; gap:8px; }
+  .badge{ font-size:0.75rem; padding:2px 8px; border-radius:999px; background:var(--badge); border:1px solid var(--badge-line); color:#cfe2f5; }
+  [data-theme="light"] .badge{ color:#22324a; }
+
+  h1{ font-size:1.35rem; margin:0 0 10px 0; }
+  h2{ font-size:1.1rem; margin:6px 0 10px; color:var(--text); font-weight:600; display:flex; align-items:center; gap:8px; }
+  label{ font-size:0.9rem; color:#c7d5e0; }
+  [data-theme="light"] label{ color:#334155; }
+
+  select,input[type="text"],input[type="file"]{ background:var(--panel); color:var(--text); border:1px solid #203040; border-radius:10px; padding:10px; width:100%; transition:box-shadow .15s ease; }
+  [data-theme="light"] select,[data-theme="light"] input{ border-color:#d1dfef; }
+  select:focus,input:focus{ outline:none; box-shadow:0 0 0 2px var(--accent); }
+
+  .grid{ display:grid; gap:var(--gap); }
+  .g2{ grid-template-columns:1fr 1fr; }
+  .g3{ grid-template-columns:1fr 1fr 1fr; }
+  .row{ display:flex; gap:var(--gap); align-items:flex-end; flex-wrap:wrap; }
+
+  .btn{ background:var(--btn); border:1px solid var(--btn-line); color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; transition:transform .05s ease, background .15s; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn.primary{ background:linear-gradient(180deg, #3b82f6, #1e40af); border-color:#1e3a8a; color:white; }
+  .btn.ghost{ background:transparent; border-color:rgba(148,163,184,0.35); color:var(--muted); }
+  .btn.ghost:hover{ background:var(--panel); }
+  .btn.btn-small{ padding:7px 12px; font-size:0.8rem; border-radius:8px; }
+
+  .hint{ color:var(--muted); font-size:0.95rem; }
+  .plot-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:6px; box-shadow:var(--shadow); }
+  .muted{ color:#97a6b1; }
+  .sep{ height:1px; background:var(--line); margin:12px 0; }
+  .pill{ display:inline-block; padding:3px 8px; border-radius:999px; background:var(--badge); border:1px solid var(--badge-line); color:#cfe2f5; font-size:0.85rem; }
+  .pill.pill-ab{ background:#fecaca; border-color:#f8b4b4; color:#742a2a; }
+  .pill.pill-fr{ background:#fed7aa; border-color:#f5c08a; color:#7a3e1d; }
+  .pill.pill-sat{ background:#bbf7d0; border-color:#9ae6b4; color:#1b4d3e; }
+  /* KPI cards */
+  .kpis{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:14px; margin:8px 0 14px; }
+  .kpi{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:var(--shadow); }
+  .kpi h4{ margin:0 0 4px 0; font-size:.95rem; color:var(--muted); }
+  .kpi .big{ font-size:1.6rem; font-weight:700; }
+  .kpi .sub{ font-size:.85rem; color:var(--muted); }
+  .table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:12px; box-shadow:var(--shadow); overflow:auto; }
+  table.data{ width:100%; border-collapse:collapse; font-size:0.9rem; min-width:420px; }
+  table.data th, table.data td{ padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
+  table.data thead{ background:linear-gradient(90deg, rgba(59,130,246,0.18), rgba(59,130,246,0)); }
+  table.data th{ color:var(--muted); font-weight:600; position:sticky; top:0; z-index:2; background:transparent; }
+  table.data thead tr:first-child th{ top:0; }
+  [data-theme="light"] table.data thead{ background:linear-gradient(90deg, rgba(37,99,235,0.12), rgba(37,99,235,0)); }
+  table.data th.sorted{ color:var(--text); }
+  table.data tbody tr{ cursor:pointer; }
+  table.data tr:hover td{ background:rgba(59,130,246,0.08); }
+  table.data tr.selected td{ background:rgba(37,99,235,0.16); }
+  table.data tr.no-data-row td{ cursor:default; background:transparent !important; }
+  table.data tbody tr[data-kind="progression"] td:first-child{ border-left:4px solid #10b981; }
+  table.data tbody tr[data-kind="stagnation"] td:first-child{ border-left:4px solid #60a5fa; }
+  table.data tbody tr[data-kind="decrochage"] td:first-child{ border-left:4px solid #f87171; }
+  .flow-legend-row th{ font-size:0.8rem; font-weight:500; color:var(--text); background:rgba(15,23,32,0.15); border-bottom:none; position:sticky; top:38px; z-index:1; padding:6px 12px; }
+  [data-theme="light"] .flow-legend-row th{ background:rgba(226,232,240,0.9); }
+  .sortable{ cursor:pointer; user-select:none; }
+  .sort-indicator{ margin-left:4px; font-size:0.75rem; opacity:0.6; }
+  .table-controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .table-controls .row{ gap:10px; align-items:center; flex-wrap:wrap; }
+  .table-chip{ display:inline-flex; align-items:center; gap:6px; background:var(--badge); border:1px solid var(--badge-line); border-radius:999px; padding:4px 10px; font-size:0.8rem; }
+  .table-chip input{ accent-color:var(--accent); }
+  .table-summary{ margin-bottom:10px; font-size:0.9rem; line-height:1.45; }
+  .chip-panel{ display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+  .chip-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; align-items:stretch; }
+  .chip-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .chip-favs{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 12px; border-radius:12px; border:1px solid var(--badge-line); background:var(--badge); cursor:pointer; user-select:none; font-size:.85rem; width:100%; box-sizing:border-box; transition:background .15s ease, border-color .15s ease, transform .1s ease; min-height:68px; }
+  .chip.active{ outline:2px solid var(--accent); }
+  .chip:hover{ transform:translateY(-1px); }
+  .chip:disabled{ opacity:0.55; cursor:not-allowed; }
+  .chip-label-main{ font-weight:600; color:var(--text); }
+  .chip-label-sub{ font-size:0.75rem; color:var(--muted); line-height:1.2; }
+  .chip.partial{ background:var(--panel); border-color:var(--line); border-style:dashed; }
+  .chip.partial .chip-label-main{ color:var(--muted); }
+  .chip.partial .chip-label-sub{ color:var(--muted); opacity:0.8; }
+  .table-details{ margin-top:12px; padding:12px; border-radius:10px; border:1px solid var(--line); background:rgba(37,99,235,0.05); color:var(--text); }
+  .table-details h4{ margin:0 0 6px 0; font-size:0.95rem; }
+  .flow-names{ margin:6px 0 0 0; padding-left:20px; }
+  .flow-names li{ margin:2px 0; }
+  .flow-legend{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; margin-right:8px; font-size:0.8rem; font-weight:600; background:rgba(255,255,255,0.12); color:var(--text); }
+  .flow-legend-prog{ background:rgba(16,185,129,0.18); color:#34d399; }
+  .flow-legend-stag{ background:rgba(96,165,250,0.18); color:#60a5fa; }
+  .flow-legend-drop{ background:rgba(248,113,113,0.18); color:#f87171; }
+  .flow-summary-cards{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .flow-card{ flex:1 1 220px; border-radius:12px; padding:12px; box-shadow:var(--shadow); border:1px solid var(--line); background:var(--card); transition:transform .2s ease; }
+  .flow-card:hover{ transform:translateY(-2px); }
+  .flow-card h4{ margin:0 0 6px 0; font-size:0.9rem; display:flex; align-items:center; gap:6px; color:var(--text); }
+  .flow-card ul{ margin:0; padding-left:18px; font-size:0.85rem; color:var(--text); }
+  .flow-card-prog{ border-color:rgba(16,185,129,0.35); background:rgba(16,185,129,0.08); }
+  .flow-card-drop{ border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.08); }
+  .flow-card-stag{ border-color:rgba(96,165,250,0.35); background:rgba(96,165,250,0.08); }
+  .flow-pill{ display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:600; white-space:nowrap; }
+  .flow-pill.flow-progression{ background:rgba(16,185,129,0.18); color:#10b981; }
+  .flow-pill.flow-stagnation{ background:rgba(96,165,250,0.18); color:#3b82f6; }
+  .flow-pill.flow-decrochage{ background:rgba(248,113,113,0.18); color:#f87171; }
+  .flow-input{ padding:8px 14px; border-radius:999px; border:1px solid var(--badge-line); background:var(--badge); color:var(--text); transition:border .2s ease, box-shadow .2s ease; }
+  .flow-input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 2px rgba(59,130,246,0.3); }
+  .flow-table-anim{ animation:flowFade .22s ease-in-out; }
+  @keyframes flowFade{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .warn{ color:#ffb3b3; }
+
+  /* Markdown look */
+  .md{ line-height:1.55; color:var(--text); }
+  .md h3{ margin:0 0 .5rem 0; }
+  .md p{ margin:.4rem 0; }
+  .md ul{ margin:.4rem 0 .6rem; padding-left:1.2rem; }
+  #intro ol li {
+    margin-bottom: 0.7rem;
+  }
+  @media print {
+    .topbar, #btnRun, #btnExport, #btnReset, #btnPdf, #btnPdfEtab, #toggleTheme, #cardSel {
+      display: none !important;
+    }
+    body { background: #ffffff !important; color: #000 !important; }
+    .card, .plot-wrap { border: none !important; box-shadow: none !important; }
+    .wrap { max-width: none; }
+    .plot-wrap { page-break-inside: avoid; }
+    h1, h2 { color: #000 !important; }
+  }
+</style>
+<!-- External libraries (loaded early so the app script can use them) -->
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    if (typeof renderFavChips === 'function') renderFavChips();
+  });
+</script>
+<div class="wrap">
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand"><span class="logo">📊</span><span class="title">EvalNat‑Suivi de cohorte</span></div>
+      <div class="toolbar">
+        <button id="btnPdf" class="btn">🖨️ Exporter PDF (page)</button>
+        <button id="btnPdfEtab" class="btn">🧾 PDF par établissement</button>
+        <button id="toggleTheme" class="btn ghost">🌓 Mode clair/sombre</button>
+      </div>
+    </div>
+  </div>
+  <div class="card hero-card" id="intro">
+    <div class="hero-top">
+      <div class="hero-heading">
+        <h1>📊 EvalNat‑Suivi de cohorte</h1>
+        <p class="hero-lead">Visualise en quelques clics les trajectoires 6e → 5e → 4e (ou 6e → 4e) des évaluations nationales : Sankey interactifs, filtres d’établissement, comparaison par genre et exports prêts à partager.</p>
+        <div class="hero-badges">
+          <span class="pill pill-ab">A besoins</span>
+          <span class="pill pill-fr">Fragile</span>
+          <span class="pill pill-sat">Satisfaisant</span>
+        </div>
+      </div>
+      <div class="hero-meta">
+        <h3>Infos clés</h3>
+        <ul>
+          <li><span>Formats</span> .xlsx / .xls / .csv (exports « Récap élèves »)</li>
+          <li><span>Transitions</span> 6e→5e→4e ou 6e→4e (si 5e absent)</li>
+          <li><span>Exports</span> PNG, PDF page entière ou par établissement</li>
+        </ul>
+      </div>
+    </div>
+    <div class="hero-steps">
+      <div class="hero-step">
+        <div class="hero-step-icon">📂</div>
+        <div>
+          <h3 class="hero-step-title">Charger les fichiers</h3>
+          <p class="hero-step-text">Sélectionner les exports en un fichier du classeur « Récap élèves » (F. Vedrenne) pour les 6e, 5e, 4e. Le 5e reste optionnel&nbsp;: sans lui, un Sankey direct 6e → 4e est produit.</p>
+        </div>
+      </div>
+      <div class="hero-step">
+        <div class="hero-step-icon">🧩</div>
+        <div>
+          <h3 class="hero-step-title">Mapper les colonnes</h3>
+          <p class="hero-step-text">Les entêtes usuels (Nom, Prénom, Sexe, Étab., Compétence…) sont pré-sélectionnés. Ajuste si besoin dans les menus déroulants.</p>
+        </div>
+      </div>
+      <div class="hero-step">
+        <div class="hero-step-icon">🎛️</div>
+        <div>
+          <h3 class="hero-step-title">Filtrer & générer</h3>
+          <p class="hero-step-text">Filtre l’établissement d’origine ou la compétence, puis lance <b>Générer</b> pour rafraîchir automatiquement Sankey et tableaux.</p>
+        </div>
+      </div>
+      <div class="hero-step">
+        <div class="hero-step-icon">📈</div>
+        <div>
+          <h3 class="hero-step-title">Lire le Sankey</h3>
+          <p class="hero-step-text">Couleur = catégorie source, largeur = effectif. Survol pour consulter le détail (« Fragile → Satisfaisant : 18 élèves »).</p>
+        </div>
+      </div>
+      <div class="hero-step">
+        <div class="hero-step-icon">👧👦</div>
+        <div>
+          <h3 class="hero-step-title">Explorer les variantes</h3>
+          <p class="hero-step-text">Vue Filles/Garçons, tableau des flux, sélection d’élèves et exports CSV complètent l’analyse du Sankey global.</p>
+        </div>
+      </div>
+      <div class="hero-step">
+        <div class="hero-step-icon">📤</div>
+        <div>
+          <h3 class="hero-step-title">Partager</h3>
+          <p class="hero-step-text">Capture les graphiques (PNG) ou exporte une page PDF. Les favoris mémorisent intitulés et établissements récurrents.</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-step hero-callout">
+      <div class="hero-step-icon">🔁</div>
+      <div>
+        <h3 class="hero-step-title">Comparer deux cohortes (A/B)</h3>
+        <p class="hero-step-text">Enregistre deux états successifs (📌 Année A puis 📌 Année B) avec les mêmes filtres : la section dédiée affiche deux Sankey côte à côte et un tableau des écarts (Δ B−A).</p>
+        <ul class="hero-callout-list">
+          <li><strong>Année A / Année B</strong> = deux cohortes distinctes (ex. 6e 2023 → 5e 2024 → 4e 2025 vs 6e 2024 → 5e 2025 → 4e 2026).</li>
+          <li><strong>Filtres actifs</strong> (Étab., intitulé, genre…) appliqués aux deux enregistrements.</li>
+          <li><strong>Comparaison de groupes</strong> : l’appariement robuste reste identique entre A et B.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <h2>📥 1) Importer les fichiers</h2>
+    <div class="grid g3">
+      <div>
+        <label>Fichier 6e</label>
+        <input id="f6" type="file" accept=".xlsx,.xls,.csv" />
+        <div class="hint" id="h6"></div>
+      </div>
+      <div>
+        <label>Fichier 5e</label>
+        <input id="f5" type="file" accept=".xlsx,.xls,.csv" />
+        <div class="hint" id="h5"></div>
+      </div>
+      <div>
+        <label>Fichier 4e</label>
+        <input id="f4" type="file" accept=".xlsx,.xls,.csv" />
+        <div class="hint" id="h4"></div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <div class="section-heading">
+      <h2>🧩 2) Mapper les colonnes</h2>
+      <button type="button" class="btn ghost btn-small" id="mapperToggle" aria-expanded="false">Déplier</button>
+    </div>
+    <div id="mapperSection" class="collapsed">
+    <div id="mapper" class="grid" style="gap:16px">
+      <div class="group">
+        <h3>6e <span class="badge">obligatoire</span></h3>
+        <div class="grid g3">
+          <div><label>6e — NOM</label><select id="nom6"></select></div>
+          <div><label>6e — PRÉNOM</label><select id="pre6"></select></div>
+          <div><label>6e — Date de naissance (recommandé)</label><select id="dn6"></select></div>
+          <div><label>6e — SEXE</label><select id="sexe6"></select></div>
+          <div><label>6e — Étab. de l’an dernier</label><select id="etab6"></select></div>
+          <div><label>6e — ITEM / Compétence</label><select id="item6"></select></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>5e <span class="badge">optionnel</span></h3>
+        <div class="grid g3">
+          <div><label>5e — NOM</label><select id="nom5"></select></div>
+          <div><label>5e — PRÉNOM</label><select id="pre5"></select></div>
+          <div><label>5e — Date de naissance (recommandé)</label><select id="dn5"></select></div>
+          <div><label>5e — SEXE</label><select id="sexe5"></select></div>
+          <div><label>5e — ITEM / Compétence</label><select id="item5"></select></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>4e <span class="badge">obligatoire</span></h3>
+        <div class="grid g3">
+          <div><label>4e — NOM</label><select id="nom4"></select></div>
+          <div><label>4e — PRÉNOM</label><select id="pre4"></select></div>
+          <div><label>4e — Date de naissance (recommandé)</label><select id="dn4"></select></div>
+          <div><label>4e — SEXE</label><select id="sexe4"></select></div>
+          <div><label>4e — ITEM / Compétence</label><select id="item4"></select></div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="sep"></div>
+    <div class="controls-grid">
+      <div class="control-card wide">
+        <label>Filtrer un intitulé (facultatif) — « Orthographe », « Fluence », …</label>
+        <input id="filterItem" type="text" placeholder="laisser vide = tout agrégé" />
+        <div class="chip-panel">
+          <div id="chipsItems" class="chip-grid"></div>
+          <div class="chip-actions">
+            <button class="btn ghost" id="btnFavItemAdd">⭐ Ajouter l’intitulé aux favoris</button>
+            <div id="favItems" class="chip-favs"></div>
+          </div>
+        </div>
+      </div>
+      <div class="control-card">
+        <label>Rechercher un élève (Nom ou Prénom)</label>
+        <input id="qEleve" type="text" placeholder="ex : Martin, Emma…" />
+      </div>
+      <div class="control-card">
+        <label>Filtrer « Étab. de l’an dernier » (multi)</label>
+        <select id="filterEtab" multiple size="4"></select>
+        <div class="chip-actions">
+          <button class="btn ghost" id="btnFavEtabAdd">⭐ Ajouter établissement(s) aux favoris</button>
+          <div id="favEtab" class="chip-favs"></div>
+        </div>
+      </div>
+      <div class="control-actions">
+        <button class="btn primary" id="btnRun">Générer ▶️</button>
+        <button class="btn ghost" id="btnReset">Réinitialiser filtres ♻️</button>
+        <button class="btn ghost" id="btnExport">Exporter PNG 📤</button>
+        <button class="btn ghost" id="btnCsv">Exporter CSV 📄</button>
+        <button class="btn ghost" id="btnSnapA" data-role="snapshot">📌 Année A</button>
+        <button class="btn ghost" id="btnSnapB" data-role="snapshot">📌 Année B</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2>🖼️ 3) Résultats</h2>
+    <div id="kpiWrap" class="kpis" style="display:none">
+      <div class="kpi">
+        <h4>✅ Progressions</h4>
+        <div class="big" id="kpiProg">–</div>
+        <div class="sub" id="kpiProgPct">–</div>
+      </div>
+      <div class="kpi">
+        <h4>⟲ Stagnations</h4>
+        <div class="big" id="kpiStag">–</div>
+        <div class="sub" id="kpiStagPct">–</div>
+      </div>
+      <div class="kpi">
+        <h4>⚠️ Décrochages</h4>
+        <div class="big" id="kpiDrop">–</div>
+        <div class="sub" id="kpiDropPct">–</div>
+      </div>
+    </div>
+    <div id="diag" class="hint"></div>
+    <div class="plot-wrap"><div id="plotGlobal" style="height:540px;"></div></div>
+    <div class="sep"></div>
+    <div class="grid g2">
+      <div class="plot-wrap"><div id="plotF" style="height:520px;"></div></div>
+      <div class="plot-wrap"><div id="plotG" style="height:520px;"></div></div>
+    </div>
+    <p class="muted">Survol = compteur de flux. Palette pastel héritée de la catégorie source.</p>
+    <div class="sep"></div>
+    <div class="table-wrap" id="flowTableWrap" style="display:none">
+      <div id="flowTableSummary" class="table-summary" style="display:none"></div>
+      <div class="table-controls">
+        <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
+          <span class="muted">Vue</span>
+          <button type="button" class="chip flow-mode active" data-flow-mode="global">Global</button>
+          <button type="button" class="chip flow-mode" data-flow-mode="filles">Filles</button>
+          <button type="button" class="chip flow-mode" data-flow-mode="garcons">Garçons</button>
+          <div style="flex:1 1 auto"></div>
+          <input id="flowTableSearch" class="flow-input" type="text" placeholder="Filtrer (ex : Fragile, progression…)" style="flex:1 1 220px; min-width:200px" />
+        </div>
+        <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap">
+          <label class="table-chip"><input type="checkbox" id="flowFilterProg" checked /> Progressions ↑</label>
+          <label class="table-chip"><input type="checkbox" id="flowFilterStag" checked /> Stagnations →</label>
+          <label class="table-chip"><input type="checkbox" id="flowFilterDrop" checked /> Décrochages ↓</label>
+          <div style="flex:1 1 auto"></div>
+          <button class="btn ghost" id="btnFlowExport">Exporter tableau CSV 📄</button>
+          <span class="muted" id="flowTableCount" style="margin-left:auto"></span>
+        </div>
+      </div>
+      <table class="data" id="flowTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="step">Phase<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="source">Origine<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="target">Destination<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="kind">Catégorie<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="value">Élèves<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="pct">Part (%)<span class="sort-indicator"></span></th>
+          </tr>
+          <tr class="flow-legend-row">
+            <th colspan="6">
+              <span class="flow-legend flow-legend-prog">↑ Progressions</span>
+              <span class="flow-legend flow-legend-stag">→ Stagnations</span>
+              <span class="flow-legend flow-legend-drop">↓ Décrochages</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="flowTableBody">
+          <tr><td colspan="6" class="muted">Clique « Générer » pour afficher le détail des flux.</td></tr>
+        </tbody>
+      </table>
+      <div id="flowTableEmpty" class="hint" style="display:none; margin-top:10px">Aucune transition ne correspond aux filtres.</div>
+      <div id="flowTableDetails" class="table-details" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="card" id="cardCompareToggle">
+    <button class="btn" id="btnToggleCompare" aria-expanded="false">🔁 Comparer des groupes de cohortes entre eux</button>
+    <p class="hint" style="margin-top:8px">Clique pour afficher/masquer la comparaison A/B. Utilise ensuite « 📌 Enregistrer Année A » et « 📌 Enregistrer Année B ».</p>
+  </div>
+  <div class="card" id="cardCompare" style="display:none">
+    <h2>📊 Comparaison inter‑années (A vs B)</h2>
+    <div class="hint">Enregistre deux états via <b>📌 Enregistrer Année A</b> puis <b>📌 Enregistrer Année B</b>. Les mêmes filtres/mappages sont utilisés pour chaque enregistrement.</div>
+    <div class="grid g2" style="align-items:start">
+      <div>
+        <div class="plot-wrap"><div id="plotA" style="height:520px;"></div></div>
+        <p class="muted" id="metaA"></p>
+      </div>
+      <div>
+        <div class="plot-wrap"><div id="plotB" style="height:520px;"></div></div>
+        <p class="muted" id="metaB"></p>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="plot-wrap" style="padding:10px">
+      <div id="deltaAB" class="md"></div>
+    </div>
+    <div class="sep"></div>
+    <div class="grid g2">
+      <div class="plot-wrap"><div id="heatAB" style="height:420px;"></div></div>
+      <div class="plot-wrap"><div id="barAB"  style="height:420px;"></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="cardSel">
+    <h2>🎯 4) Sélection d’élèves (beta)</h2>
+    <div class="hint">Compose un groupe par nom (6e) et visualise <b>leur</b> Sankey. La sélection respecte les mappings/filtres en cours (intitulé, établissement, etc.).</div>
+    <div class="grid g2" style="align-items:start;">
+      <div>
+        <label>Rechercher</label>
+        <input id="qRoster" type="text" placeholder="ex: Martin, Emma…" />
+        <div class="row" style="margin-top:8px">
+          <div style="flex:1 1 50%">
+            <label>Tous les élèves (6e)</label>
+            <select id="lstAll" multiple size="10" style="width:100%"></select>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; justify-content:center; align-items:center; padding:0 8px">
+            <button class="btn" id="btnAddSel">➕</button>
+            <button class="btn" id="btnRemSel">➖</button>
+            <button class="btn ghost" id="btnClearSel">Vider</button>
+          </div>
+          <div style="flex:1 1 50%">
+            <label>Sélection</label>
+            <select id="lstSel" multiple size="10" style="width:100%"></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label><input type="checkbox" id="onlyMatched" checked /> Restreindre aux élèves appariés (présents en 4e)</label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn primary" id="btnRunSel">Générer la sélection ▶️</button>
+        </div>
+      </div>
+      <div>
+        <div class="plot-wrap"><div id="plotSel" style="height:520px;"></div></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" id="btnExportSel">Exporter PNG 📤</button>
+          <input type="checkbox" id="rgpdInitiales" checked style="margin-left:8px" />
+          <label for="rgpdInitiales">Initiales seulement</label>
+          <button class="btn" id="btnExportSelCSV" style="margin-left:8px">Exporter transitions (CSV) 📄</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function renderMD(id, md){ const el = document.getElementById(id); if(!el) return; el.innerHTML = marked.parse(md); }
+/* ===== Palette / Catégories ===== */
+const PALETTE = { "A besoins":"#fecaca", "Fragile":"#fed7aa", "Satisfaisant":"#bbf7d0" };
+const CATS = ["A besoins","Fragile","Satisfaisant"];
+
+/* ===== Helpers ===== */
+function strip(s){ if(s==null) return ""; return String(s).normalize("NFD").replace(/\p{Diacritic}/gu,""); }
+function normToken(s){
+  return strip(s||"")
+    .toUpperCase()
+    .replace(/[-'.]/g," ")
+    .replace(/[^A-Z0-9 ]/g,"")
+    .replace(/\s+/g," ")
+    .trim();
+}
+function normEtab(s){
+  // Normalise fortement pour comparer des variantes ("École A", "Ecole A", espaces insécables, tirets, etc.)
+  return normToken(String(s||"").replace(/\u00A0/g," ").replace(/[–—]/g,"-"));
+}
+function firstGivenName(pre){
+  const t = normToken(pre).split(" ");
+  return t[0]||"";
+}
+function normName(nom, prenom){
+  return (normToken(nom)+" "+normToken(prenom)).trim();
+}
+function normNameSwapped(nom, prenom){
+  return (normToken(prenom)+" "+normToken(nom)).trim();
+}
+function normalizeFilterTerm(v){
+  return strip(String(v||''))
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g," ")
+    .trim();
+}
+function matchesSkillFilter(row, colKey, term){
+  const normTerm = normalizeFilterTerm(term);
+  if(!normTerm) return true;
+  if(!colKey) return false;
+  const cell = row && typeof row === 'object' && colKey in row ? row[colKey] : undefined;
+  const normValue = normalizeFilterTerm(cell);
+  if(normValue && normValue.includes(normTerm)) return true;
+  const normCol = normalizeFilterTerm(colKey);
+  return normCol.includes(normTerm);
+}
+
+function summarizeNames(list, max=20){
+  if(!Array.isArray(list) || !list.length) return "";
+  const head = list.slice(0, max).join(", ");
+  const rest = list.length - Math.min(max, list.length);
+  return rest > 0 ? `${head}<br>… +${rest} autre(s)` : head;
+}
+function fmtDate(d){
+  const s = String(d??"").trim();
+  if(!s) return "";
+  const m = s.match(/(\d{4})[^\d]?(\d{1,2})[^\d]?(\d{1,2})/);
+  const dmy = s.match(/(\d{1,2})[^\d]?(\d{1,2})[^\d]?(\d{2,4})/);
+  let Y,M,D;
+  if(m){ Y=m[1]; M=m[2]; D=m[3]; }
+  else if(dmy){
+    Y = dmy[3].length===2 ? ("20"+dmy[3]) : dmy[3];
+    M = dmy[2]; D = dmy[1];
+  } else return "";
+  const mm = String(M).padStart(2,"0"), dd = String(D).padStart(2,"0");
+  return `${Y}${mm}${dd}`;
+}
+function mapSexe(x){
+  const s = strip(x||"").toLowerCase();
+  if(s.startsWith("f")) return "F";
+  if(s.startsWith("g") || s.startsWith("m")) return "G";
+  return "U";
+}
+function fgFromLabel(x){
+  const t = strip(x||"").toLowerCase().trim();
+  if(!t) return "NR";
+  const AB = [
+    /\b(a\s*besoin|à\s*besoin)s?\b/,
+    /\bbesoins?\b/,
+    /\bbe?soin\s+renforc[ée]?\b/,
+    /\bprioritaire\b/,
+    /\btrès?\s*fragil[ea]?\b/,
+    /\brem[ée]diation\b/,
+    /\bniv(?:eau)?\s*1\b/,
+    /\bpalier\s*1\b/,
+  ];
+  const FR = [
+    /\bfragil[ea]?\b/,
+    /\bvigilance\b/,
+    /\bniv(?:eau)?\s*2\b/,
+    /\bpalier\s*2\b/,
+  ];
+  const SAT = [
+    /\bsatisfaisant(?:e|es)?\b/,
+    /\bmaitrise\b/, /\bmaîtrise\b/, /\bma[îi]tris[ée]?\b/,
+    /\bacquis?\b/,
+    /\bok\b/, /\bbon\b/, /\bcorrect\b/,
+    /\bniv(?:eau)?\s*3\b/,
+    /\bniv(?:eau)?\s*4\b/,
+    /\bpalier\s*3\b/,
+    /\bpalier\s*4\b/,
+  ];
+  for(const rx of AB){ if(rx.test(t)) return "A besoins"; }
+  for(const rx of FR){ if(rx.test(t)) return "Fragile"; }
+  for(const rx of SAT){ if(rx.test(t)) return "Satisfaisant"; }
+  return "NR";
+}
+function readSheet(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = e=>{
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:"array"});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        // Pass 1: standard JSON with headers
+        let rows = XLSX.utils.sheet_to_json(ws,{defval:null, raw:false});
+        const looksBad = !rows.length || Object.keys(rows[0]||{}).length === 0
+                         || Object.keys(rows[0]||{}).every(k => /^__EMPTY/.test(String(k)));
+        if(looksBad){
+          // Pass 2: header:1, detect header row
+          const m = XLSX.utils.sheet_to_json(ws,{header:1, defval:null, raw:false});
+          if(!m.length) return resolve([]);
+          // find header-like row (>=3 non-empty cells)
+          let hi = -1;
+          for(let i=0;i<m.length;i++){
+            const nonEmpty = (m[i]||[]).filter(v => v!=null && String(v).trim()!=="").length;
+            if(nonEmpty >= 3){ hi = i; break; }
+          }
+          if(hi<0){ return resolve([]); }
+          const headers = (m[hi]||[]).map(h => String(h||"").trim());
+          const out = [];
+          for(let i=hi+1;i<m.length;i++){
+            const row = m[i]||[];
+            const obj = {};
+            for(let j=0;j<headers.length;j++){
+              const key = headers[j] || `Col${j+1}`;
+              obj[key] = row[j]==null ? null : row[j];
+            }
+            // ignore completely empty lines
+            if(Object.values(obj).some(v => v!=null && String(v).trim()!=="")){
+              out.push(obj);
+            }
+          }
+          rows = out;
+        }
+        resolve(rows);
+      }catch(err){ reject(err); }
+    };
+    r.onerror = reject;
+    r.readAsArrayBuffer(file);
+  });
+}
+function selectFirst(sel){
+  if(!sel) return;
+  const opts = sel.querySelectorAll('option');
+  if(opts.length > 1 && !sel.value){ sel.value = opts[1].value; }
+}
+function fillOptions(sel, cols){
+  sel.innerHTML = `<option value="">(sélectionner)</option>` + (cols||[]).map(col=>{
+    const raw = String(col ?? '');
+    const display = raw.replace(/\s*[\r\n]+\s*/g,' — ').replace(/\s+/g,' ').trim();
+    return `<option value="${escapeAttr(raw)}">${escapeHtml(display)}</option>`;
+  }).join("");
+}
+const KNOWN_SKILLS = [
+  "Compréhension de l'oral\nComprendre un message oral",
+  "Test spécifique de compréhension de l'écrit\nComprendre un texte",
+  "Étude de la langue\nSe repérer dans une phrase et identifier sa composition",
+  "Étude de la langue\nMaîtriser l'orthographe",
+  "Test spécifique en étude de la langue - lexique\nComprendre et mobiliser le lexique",
+  "Fluence\nLire un texte à voix haute",
+  "Test spécifique en automatismes\nMobiliser directement des procédures et des connaissances",
+  "Test spécifique en résolution de problèmes\nRésoudre des problèmes en utilisant des nombres, des données et des grandeurs",
+  "Espace et géométrie\nConnaître et utiliser des notions de géométrie",
+  "Grandeurs et mesures\nConnaître des grandeurs et utiliser des unités de mesure",
+  "Nombres et calculs\nConnaître les nombres et les utiliser dans des calculs",
+  "Organisation et gestion de données, fonctions\nConnaître et utiliser des données et la notion de fonction"
+];
+const SKILL_SLUG_SET = new Set(KNOWN_SKILLS.map(label=>skillSlug(label)));
+const SKILL_SLUG_LIST = Array.from(SKILL_SLUG_SET);
+const SKILL_SLUG_TOKENS = SKILL_SLUG_LIST.map(slug=>{
+  return { slug, tokens: new Set(slug.split('-').filter(Boolean)) };
+});
+
+function skillSlug(label){
+  const base = strip(String(label||"").replace(/\s+/g," ").replace(/\n+/g," ")).toLowerCase();
+  const clean = base.replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+  if(!clean) return "";
+  function singularize(word){
+    if(word.length <= 3) return word;
+    if(/(aux|eaux)$/.test(word)){
+      if(word.endsWith('eaux')) return word.slice(0,-4)+'eau';
+      return word.slice(0,-3)+'al';
+    }
+    if(/(ies)$/.test(word) && word.length>4) return word.slice(0,-3)+'y';
+    if(word.endsWith('s') || word.endsWith('x')){
+      return word.replace(/(s|x)+$/,'');
+    }
+    return word;
+  }
+  const tokens = clean.split(' ').map(singularize).filter(Boolean);
+  const seen = new Set();
+  const unique = [];
+  for(const tok of tokens){
+    if(seen.has(tok)) continue;
+    seen.add(tok);
+    unique.push(tok);
+  }
+  return unique.join('-');
+}
+
+function canonicalSkillSlug(slug){
+  if(!slug) return "";
+  if(SKILL_SLUG_SET.has(slug)) return slug;
+  const tokens = slug.split('-').filter(Boolean);
+  if(!tokens.length) return slug;
+  let best = slug;
+  let bestScore = 0;
+  for(const entry of SKILL_SLUG_TOKENS){
+    let inter = 0;
+    for(const t of tokens){
+      if(entry.tokens.has(t)) inter++;
+    }
+    if(!inter) continue;
+    const scoreA = inter / entry.tokens.size;
+    const scoreB = inter / tokens.length;
+    const score = Math.min(scoreA, scoreB);
+    if(score > bestScore && (scoreA >= 0.6 || scoreB >= 0.6)){
+      bestScore = score;
+      best = entry.slug;
+    }
+  }
+  return best;
+}
+
+function buildSkillMap(cols){
+  const map = new Map();
+  if(!cols) return map;
+  for(const col of cols){
+    const raw = String(col);
+    let slug = canonicalSkillSlug(skillSlug(raw));
+    if(!slug && headerLooksSkill(raw)){
+      slug = canonicalSkillSlug(normalizeFilterTerm(raw));
+    }
+    if(!slug || map.has(slug)) continue;
+    if(SKILL_SLUG_SET.has(slug) || headerLooksSkill(raw)){
+      map.set(slug, raw);
+    }
+  }
+  return map;
+}
+
+function preferItemColumn(cols, map){
+  if(!cols || !cols.length) return "";
+  if(map && map.size){
+    const [, firstCol] = map.entries().next().value || [null,null];
+    if(firstCol) return firstCol;
+  }
+  for(const col of cols){
+    if(SKILL_SLUG_SET.has(skillSlug(col))) return col;
+  }
+  const hints = ["niveau","catég","categorie","orthographe","fluence","compr","lexique","automati","résolution","nombres","géom","grandeurs","mesures","item","compétence","competence","lecture","langue","étab","etab","ecole","école","dernier"];
+  return cols.find(k=>hints.some(h=>String(k).toLowerCase().includes(h))) || cols[0] || "";
+}
+
+function findMatchingSkillColumn(map, reference, fallbackCols){
+  if(!reference) return "";
+  const wantSlug = canonicalSkillSlug(skillSlug(reference));
+  if(!wantSlug) return "";
+  if(map && map.has(wantSlug)) return map.get(wantSlug);
+  const wantMain = canonicalSkillSlug(skillSlug(String(reference).split(/\n+/)[0]));
+  if(wantMain && map){
+    for(const [slug, col] of map.entries()){
+      const canonSlug = canonicalSkillSlug(slug);
+      if(canonSlug === wantMain) return col;
+      const main = canonicalSkillSlug(skillSlug(String(col).split(/\n+/)[0]));
+      if(canonSlug.includes(wantMain) || main === wantMain) return col;
+    }
+  }
+  if(fallbackCols && fallbackCols.length){
+    for(const col of fallbackCols){
+      if(canonicalSkillSlug(skillSlug(col)) === wantSlug) return col;
+    }
+  }
+  return "";
+}
+function alignSkillColumns(){
+  if(!item6 || !item6.value) return;
+  const slug = canonicalSkillSlug(skillSlug(item6.value));
+  if(!slug) return;
+  if(item5 && cols5 && cols5.length){
+    const match5 = findMatchingSkillColumn(skillMap5, item6.value, cols5);
+    if(match5 && item5.value !== match5) item5.value = match5;
+  }
+  if(item4 && cols4 && cols4.length){
+    const match4 = findMatchingSkillColumn(skillMap4, item6.value, cols4);
+    if(match4 && item4.value !== match4) item4.value = match4;
+  }
+}
+
+// ===== Helpers for mapping propagation =====
+function setIfPresent(sel, cols, value){
+  if(!sel || !value) return;
+  const hit = cols.find(c => String(c) === String(value));
+  if(hit){ sel.value = hit; }
+}
+function preselectByName(targetSel, targetCols, sourceSel){
+  if(!targetSel || !sourceSel) return;
+  const want = sourceSel.value;
+  if(!want) return;
+  setIfPresent(targetSel, targetCols, want);
+}
+function propagateMapping(){
+  // Si 6e est mappé, et que 5e/4e sont vides, tente de recopier les mêmes noms de colonnes
+  if(cols5 && cols5.length){
+    preselectByName(nom5, cols5, nom6);
+    preselectByName(pre5, cols5, pre6);
+    preselectByName(dn5,  cols5, dn6);
+    preselectByName(sexe5,cols5, sexe6);
+    if(!item5.value){ item5.value = preferItemColumn(cols5); }
+    preselectByName(item5, cols5, item6);
+  }
+  if(cols4 && cols4.length){
+    preselectByName(nom4, cols4, nom6);
+    preselectByName(pre4, cols4, pre6);
+    preselectByName(dn4,  cols4, dn6);
+    preselectByName(sexe4,cols4, sexe6);
+    if(!item4.value){ item4.value = preferItemColumn(cols4); }
+    preselectByName(item4, cols4, item6);
+  }
+}
+
+/* ===== Auto-détection catégories si ITEM/NIVEAU absents ===== */
+const HEADER_HINTS = ["orthographe","fluence","compr","lexique","automati","résolution","nombres","géom","grandeurs","mesures","item","compétence","competence","lecture","langue"];
+function isNumeric(v){ return v!=null && v!=="" && !isNaN(Number(String(v).replace(",", "."))); }
+function headerLooksSkill(h){
+  const s = String(h||"").toLowerCase();
+  return HEADER_HINTS.some(k => s.includes(k));
+}
+function autoLabelFromAnyTextRow(r){
+  for(const k in r){
+    const v = r[k];
+    if(v!=null && typeof v === "string"){
+      const c = fgFromLabel(v);
+      if(c !== "NR") return c;
+    }
+  }
+  return "NR";
+}
+function autoFromNumericRow(r){
+  const keys = Object.keys(r);
+  const cand = keys.filter(k => headerLooksSkill(k) && isNumeric(r[k]));
+  const use = cand.length ? cand : keys.filter(k => isNumeric(r[k]));
+  if(!use.length) return "NR";
+  let vals = [];
+  for(const k of use){
+    const n = Number(String(r[k]).replace(",", "."));
+    if(Number.isFinite(n)) vals.push(n);
+  }
+  if(!vals.length) return "NR";
+  const m = vals.reduce((a,b)=>a+b,0) / vals.length;
+  if(m < 25) return "A besoins";
+  if(m < 50) return "Fragile";
+  return "Satisfaisant";
+}
+
+/* ===== État & DOM ===== */
+let rows6=[], rows5=[], rows4=[], cols6=[], cols5=[], cols4=[];
+let skillMap6=new Map(), skillMap5=new Map(), skillMap4=new Map();
+const SKILLS_BY_YEARS = { 6:new Map(), 5:new Map(), 4:new Map() };
+const el = (id)=>document.getElementById(id);
+const f6=el("f6"), f4=el("f4"), f5=el("f5"), h6=el("h6"), h4=el("h4"), h5=el("h5");
+const nom6=el("nom6"), pre6=el("pre6"), dn6=el("dn6"), sexe6=el("sexe6"), etab6=el("etab6"), item6=el("item6");
+const nom5=el("nom5"), pre5=el("pre5"), dn5=el("dn5"), sexe5=el("sexe5"), item5=el("item5");
+const nom4=el("nom4"), pre4=el("pre4"), dn4=el("dn4"), sexe4=el("sexe4"), item4=el("item4");
+const filterItem=el("filterItem"), qEleve=el("qEleve"), filterEtab=el("filterEtab");
+const btnRun=el("btnRun"), btnExport=el("btnExport"), btnReset=el("btnReset"), btnPdf=el("btnPdf"), btnPdfEtab=el("btnPdfEtab");
+const btnCsv=el("btnCsv"), btnSnapA=el("btnSnapA"), btnSnapB=el("btnSnapB");
+const chipsItems=el("chipsItems"), btnFavItemAdd=el("btnFavItemAdd"), favItems=el("favItems");
+const btnFavEtabAdd=el("btnFavEtabAdd"), favEtab=el("favEtab");
+const plotA=el("plotA"), plotB=el("plotB"), metaA=el("metaA"), metaB=el("metaB"), deltaAB=el("deltaAB");
+const rgpdInitiales=el("rgpdInitiales"), btnExportSelCSV=el("btnExportSelCSV");
+const diag=el("diag"), plotGlobal=el("plotGlobal"), plotF=el("plotF"), plotG=el("plotG");
+const flowTableWrap=el("flowTableWrap"), flowTableSearch=el("flowTableSearch"), flowTableBody=el("flowTableBody"), flowTableEmpty=el("flowTableEmpty"), flowTableCount=el("flowTableCount"), flowTableSummary=el("flowTableSummary"), flowTableDetails=el("flowTableDetails");
+const flowFilterProg=el("flowFilterProg"), flowFilterStag=el("flowFilterStag"), flowFilterDrop=el("flowFilterDrop"), btnFlowExport=el("btnFlowExport");
+const flowModeButtons = Array.from(document.querySelectorAll('[data-flow-mode]') || []);
+const mapperToggle = el("mapperToggle"), mapperSection = el("mapperSection");
+// Selection UI
+const qRoster=el("qRoster"),
+      lstAll=el("lstAll"),
+      lstSel=el("lstSel"),
+      btnAddSel=el("btnAddSel"),
+      btnRemSel=el("btnRemSel"),
+      btnClearSel=el("btnClearSel"),
+      onlyMatched=el("onlyMatched"),
+      btnRunSel=el("btnRunSel"),
+      plotSel=el("plotSel"),
+      btnExportSel=el("btnExportSel");
+function key6of(r){
+  const _nom = nom6.value ? r[nom6.value] : "";
+  const _pre = pre6.value ? r[pre6.value] : "";
+  const _dn  = dn6.value  ? fmtDate(r[dn6.value]) : "";
+  const _sx  = mapSexe(sexe6.value ? r[sexe6.value] : "");
+  const NP   = normName(_nom,_pre);
+  const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+  const k1 = _dn ? (NP+"|DN|"+_dn) : "";
+  const k2 = (NP+"|SX|"+_sx);
+  return k1 || k2 || ("NP|"+NP) || ("NP1|"+NP1);
+}
+function key4of(r){
+  const _nom = nom4.value ? r[nom4.value] : "";
+  const _pre = pre4.value ? r[pre4.value] : "";
+  const _dn  = dn4.value  ? fmtDate(r[dn4.value]) : "";
+  const _sx  = mapSexe(sexe4.value ? r[sexe4.value] : "");
+  const NP   = normName(_nom,_pre);
+  const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+  const k1 = _dn ? (NP+"|DN|"+_dn) : "";
+  const k2 = (NP+"|SX|"+_sx);
+  return k1 || k2 || ("NP|"+NP) || ("NP1|"+NP1);
+}
+function buildRoster(){
+  const term = String(qRoster?.value||"").toUpperCase();
+  const selectedEtab = Array.from(filterEtab?.selectedOptions || []).map(o=>o.value);
+  const selectedEtabNorm = new Set(selectedEtab.map(v => normEtab(v)));
+  const useEtabFilter = selectedEtabNorm.size > 0 && !!etab6.value;
+  const items = [];
+  for(const r of rows6){
+    if(useEtabFilter){
+      const etabVal = etab6.value ? normEtab(r[etab6.value]) : "";
+      if(!selectedEtabNorm.has(etabVal)) continue;
+    }
+    const nom = nom6.value ? r[nom6.value] : "";
+    const pre = pre6.value ? r[pre6.value] : "";
+    const label = `${String(nom||"").trim()} ${String(pre||"").trim()}`.trim();
+    if(term && !label.toUpperCase().includes(term)) continue;
+    items.push({ key:key6of(r), label });
+  }
+  if(onlyMatched && onlyMatched.checked){
+    const idx4 = buildIndex4();
+    const present4 = new Set();
+    for(const r6 of rows6){
+      const _nom = nom6.value ? r6[nom6.value] : "";
+      const _pre = pre6.value ? r6[pre6.value] : "";
+      const _dn  = dn6.value  ? fmtDate(r6[dn6.value]) : "";
+      const _sx  = mapSexe(sexe6.value ? r6[sexe6.value] : "");
+      const NP   = normName(_nom,_pre);
+      const NPD  = _dn ? (NP+" "+_dn) : "";
+      const NPS  = (NP+" "+_sx).trim();
+      const Swap = normNameSwapped(_nom,_pre);
+      const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+      let ok=false;
+      if(NPD && idx4.byNPD.has(NPD)) ok=true;
+      else if(NPS && idx4.byNPS.has(NPS)) ok=true;
+      else if(NP  && idx4.byNP.has(NP))   ok=true;
+      else if(Swap&& idx4.bySwap.has(Swap)) ok=true;
+      else if(NP1 && idx4.byNP_firstGiven.has(NP1)) ok=true;
+      if(ok) present4.add(key6of(r6));
+    }
+    return items.filter(it => present4.has(it.key));
+  }
+  return items;
+}
+function refreshRoster(){
+  if(!lstAll || !lstSel) return;
+  const items = buildRoster();
+  const selectedKeys = new Set(Array.from(lstSel.options).map(o=>o.value));
+  lstAll.innerHTML = items
+    .filter(it => !selectedKeys.has(it.key))
+    .map(it => `<option value="${it.key}">${it.label}</option>`) 
+    .join("");
+}
+function addSelected(){
+  const opts = Array.from(lstAll.selectedOptions||[]);
+  for(const o of opts){
+    const clone = document.createElement('option');
+    clone.value = o.value; clone.textContent = o.textContent;
+    lstSel.appendChild(clone);
+  }
+  refreshRoster();
+}
+function removeSelected(){
+  Array.from(lstSel.selectedOptions||[]).forEach(o=>o.remove());
+  refreshRoster();
+}
+function clearSelection(){
+  lstSel.innerHTML = ""; refreshRoster();
+}
+if(qRoster) qRoster.addEventListener('input', refreshRoster);
+if(onlyMatched) onlyMatched.addEventListener('change', refreshRoster);
+if(btnAddSel) btnAddSel.addEventListener('click', addSelected);
+if(btnRemSel) btnRemSel.addEventListener('click', removeSelected);
+if(btnClearSel) btnClearSel.addEventListener('click', clearSelection);
+
+/* ===== Favoris (localStorage) ===== */
+const LS_FAV_ITEMS = 'evalnat_fav_items';
+const LS_FAV_ETAB  = 'evalnat_fav_etab';
+
+function loadFav(key){
+  try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch{ return []; }
+}
+function saveFav(key, arr){
+  localStorage.setItem(key, JSON.stringify(Array.from(new Set(arr))));
+}
+function renderFavChips(){
+  // Items
+  if(favItems){
+    const items = loadFav(LS_FAV_ITEMS);
+    favItems.innerHTML = items.map(x=>`<span class="chip ${chipClass(x)}" data-kind="item" data-val="${escapeHtml(x)}">⭐ ${escapeHtml(x)}</span>`).join("");
+  }
+  // Etab
+  if(favEtab){
+    const etabs = loadFav(LS_FAV_ETAB);
+    favEtab.innerHTML = etabs.map(x=>`<span class="chip" data-kind="etab" data-val="${escapeHtml(x)}">🏫 ${escapeHtml(x)}</span>`).join("");
+  }
+}
+function chipClass(){ return ''; }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/\r/g,'&#13;').replace(/\n/g,'&#10;'); }
+
+if(btnFavItemAdd){
+  btnFavItemAdd.addEventListener('click', ()=>{
+    const v = String(filterItem.value||'').trim();
+    if(!v){ alert('Renseigne un intitulé dans le champ pour l’ajouter aux favoris.'); return; }
+    const items = loadFav(LS_FAV_ITEMS); items.push(v); saveFav(LS_FAV_ITEMS, items); renderFavChips();
+  });
+}
+if(btnFavEtabAdd){
+  btnFavEtabAdd.addEventListener('click', ()=>{
+    const sels = Array.from(filterEtab.selectedOptions||[]).map(o=>o.value);
+    if(!sels.length){ alert('Sélectionne un ou plusieurs établissements dans la liste multi.'); return; }
+    const cur = loadFav(LS_FAV_ETAB); saveFav(LS_FAV_ETAB, cur.concat(sels)); renderFavChips();
+  });
+}
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('.chip');
+  if(!t) return;
+  const kind = t.getAttribute('data-kind');
+  const val  = t.getAttribute('data-val') || '';
+  const raw  = t.getAttribute('data-col') || val;
+  const slug = t.getAttribute('data-slug') || '';
+  if(kind==='item'){
+    filterItem.value = val;
+    ensureSkillSelection(raw, slug);
+    renderAll();
+  }else if(kind==='etab'){
+    // select only this etab
+    Array.from(filterEtab.options||[]).forEach(o=>o.selected = (o.value===val));
+    renderAll(); refreshRoster();
+  }
+});
+if(filterItem){
+  filterItem.addEventListener('change', ()=>{
+    ensureSkillSelection(filterItem.value, skillSlug(filterItem.value));
+  });
+}
+if(mapperToggle && mapperSection){
+  const initCollapsed = mapperSection.classList.contains('collapsed');
+  mapperToggle.setAttribute('aria-expanded', initCollapsed ? 'false' : 'true');
+  mapperToggle.textContent = initCollapsed ? 'Déplier' : 'Réduire';
+  mapperToggle.addEventListener('click', ()=>{
+    const collapsed = mapperSection.classList.toggle('collapsed');
+    mapperToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    mapperToggle.textContent = collapsed ? 'Déplier' : 'Réduire';
+  });
+}
+
+function detectIntitules(){
+  const info = new Map();
+  function ensure(slug){
+    let node = info.get(slug);
+    if(!node){
+      node = { slug, raw:"", variants:new Set(), levels:new Set() };
+      info.set(slug, node);
+    }
+    return node;
+  }
+  function record(col, level, slugHint){
+    if(col==null) return;
+    const raw = String(col);
+    const slug = canonicalSkillSlug(slugHint || skillSlug(raw) || normalizeFilterTerm(raw));
+    if(!slug) return;
+    const node = ensure(slug);
+    node.variants.add(raw);
+    if(!node.raw || raw.length > node.raw.length){
+      node.raw = raw;
+    }
+    if(level) node.levels.add(level);
+  }
+  function registerFromMap(skillMap, level){
+    if(!skillMap) return;
+    for(const [slug,col] of skillMap.entries()){
+      record(col, level, slug);
+    }
+  }
+  function registerFromCols(cols, level){
+    if(!Array.isArray(cols)) return;
+    for(const col of cols){
+      if(headerLooksSkill(col)){
+        record(col, level);
+      }
+    }
+  }
+  registerFromMap(skillMap6, 6);
+  registerFromCols(cols6, 6);
+  registerFromMap(skillMap5, 5);
+  registerFromCols(cols5, 5);
+  registerFromMap(skillMap4, 4);
+  registerFromCols(cols4, 4);
+
+  const items = [];
+  for(const ref of KNOWN_SKILLS){
+    const slug = canonicalSkillSlug(skillSlug(ref));
+    if(!slug) continue;
+    const node = info.get(slug);
+    if(node){
+      items.push({slug, raw: node.raw || ref, display: ref, levels: Array.from(node.levels)});
+      info.delete(slug);
+    }
+  }
+  const rest = Array.from(info.values())
+    .map(node => ({
+      slug: node.slug,
+      raw: node.raw,
+      display: node.raw,
+      levels: Array.from(node.levels)
+    }))
+    .sort((a,b)=>normalizeFilterTerm(a.display).localeCompare(normalizeFilterTerm(b.display),'fr'));
+  items.push(...rest);
+  return items;
+}
+function renderChips(){
+  if(!chipsItems) return;
+  const items = detectIntitules();
+  const expectedLevels = [];
+  if(rows6.length && cols6.length) expectedLevels.push(6);
+  if(rows5.length && cols5.length) expectedLevels.push(5);
+  if(rows4.length && cols4.length) expectedLevels.push(4);
+  const expectedCount = expectedLevels.length;
+  const currentSlug = canonicalSkillSlug(skillSlug(item6 && item6.value ? item6.value : ''));
+  chipsItems.innerHTML = items.slice(0,120).map(item=>{
+    const raw = item?.raw || '';
+    const displaySrc = item?.display || raw;
+    const fullDisplay = String(displaySrc||'').replace(/\s*[\r\n]+\s*/g,' — ').replace(/\s+/g,' ').trim();
+    const slug = canonicalSkillSlug(item?.slug || skillSlug(raw) || normalizeFilterTerm(raw));
+    const active = currentSlug && slug && currentSlug === slug ? ' active' : '';
+    const [main, ...restParts] = fullDisplay.split(' — ');
+    const subtitle = restParts.join(' — ').trim();
+    const primary = main || fullDisplay;
+    const filterVal = fullDisplay;
+    const presentCount = Array.isArray(item?.levels) ? item.levels.length : 0;
+    const partial = expectedCount > 0 && presentCount > 0 && presentCount < expectedCount;
+    const status = partial ? ' partial' : '';
+    const content = subtitle
+      ? `<span class="chip-label-main">${escapeHtml(primary)}</span><span class="chip-label-sub">${escapeHtml(subtitle)}</span>`
+      : `<span class="chip-label-main">${escapeHtml(primary)}</span>`;
+    return `<span class="chip${status}${active}" data-kind="item" data-val="${escapeHtml(filterVal)}" data-col="${escapeAttr(String(raw))}" data-slug="${escapeAttr(String(slug))}" title="${escapeAttr(fullDisplay)}">${content}</span>`;
+  }).join("");
+}
+function pickSkillColumnFor(label, map, cols, slugHint){
+  const slug = canonicalSkillSlug(slugHint || skillSlug(label));
+  if(slug && map && map.has(slug)) return map.get(slug);
+  if(slug && Array.isArray(cols)){
+    const direct = cols.find(c => canonicalSkillSlug(skillSlug(c)) === slug);
+    if(direct) return direct;
+  }
+  if(label){
+    const match = findMatchingSkillColumn(map, label, cols);
+    if(match) return match;
+  }
+  if(Array.isArray(cols)){
+    const want = normalizeFilterTerm(label);
+    const direct = cols.find(c => normalizeFilterTerm(c) === want);
+    if(direct) return direct;
+  }
+  return "";
+}
+function ensureSkillSelection(label, slugHint){
+  if(!label && !slugHint) return;
+  const slug = canonicalSkillSlug(slugHint || skillSlug(label));
+  if(item6 && cols6 && cols6.length){
+    const col6 = pickSkillColumnFor(label, skillMap6, cols6, slug);
+    if(col6) item6.value = col6;
+    if(slug && col6) SKILLS_BY_YEARS[6].set(slug, col6);
+  }
+  if(item5 && cols5 && cols5.length){
+    const col5 = pickSkillColumnFor(label, skillMap5, cols5, slug);
+    if(col5) item5.value = col5;
+    if(slug && col5) SKILLS_BY_YEARS[5].set(slug, col5);
+  }
+  if(item4 && cols4 && cols4.length){
+    const col4 = pickSkillColumnFor(label, skillMap4, cols4, slug);
+    if(col4) item4.value = col4;
+    if(slug && col4) SKILLS_BY_YEARS[4].set(slug, col4);
+  }
+  alignSkillColumns();
+  renderChips();
+}
+async function onLoad(which){
+  const inp = which==="6" ? f6 : (which==="4" ? f4 : f5);
+  const lab = which==="6" ? h6 : (which==="4" ? h4 : h5);
+  const file = inp.files?.[0]; if(!file) return;
+  const rows = await readSheet(file);
+  if(which==="6"){ rows6 = rows; cols6 = Object.keys(rows6[0]||{}); }
+  else if(which==="5"){ rows5 = rows; cols5 = Object.keys(rows5[0]||{}); }
+  else { rows4 = rows; cols4 = Object.keys(rows4[0]||{}); }
+  const cols = which==="6" ? cols6 : (which==="5" ? cols5 : cols4);
+  const skillMap = buildSkillMap(cols);
+  if(which==="6") skillMap6 = skillMap;
+  else if(which==="5") skillMap5 = skillMap;
+  else skillMap4 = skillMap;
+
+  if(!cols || !cols.length){
+    lab.textContent = `${file.name} — ${rows.length} lignes (Impossible d'inférer les entêtes : vérifie que la première feuille contient une ligne d'en-têtes)`;
+    return;
+  }
+
+  if(which==="6"){
+    fillOptions(nom6, cols); fillOptions(pre6, cols); fillOptions(dn6, cols); fillOptions(sexe6, cols); fillOptions(etab6, cols);
+    fillOptions(item6, cols);
+    item6.value = preferItemColumn(cols, skillMap6);
+    function preset(sel, idx){
+      if(!sel) return;
+      const col = cols[idx];
+      if(col) sel.value = col;
+    }
+    preset(nom6, 1);
+    preset(pre6, 2);
+    preset(dn6, 3);
+    preset(sexe6, 4);
+    preset(etab6, 5);
+    selectFirst(item6);
+  } else if(which==="5"){
+    fillOptions(nom5, cols); fillOptions(pre5, cols); fillOptions(dn5, cols); fillOptions(sexe5, cols);
+    fillOptions(item5, cols);
+    item5.value = preferItemColumn(cols, skillMap5);
+    selectFirst(nom5); selectFirst(pre5); selectFirst(sexe5); selectFirst(item5); selectFirst(dn5);
+  } else {
+    fillOptions(nom4, cols); fillOptions(pre4, cols); fillOptions(dn4, cols); fillOptions(sexe4, cols);
+    fillOptions(item4, cols);
+    item4.value = preferItemColumn(cols, skillMap4);
+    selectFirst(nom4); selectFirst(pre4); selectFirst(sexe4); selectFirst(item4); selectFirst(dn4);
+  }
+
+  alignSkillColumns();
+
+  if(which==="6"){
+    const col = etab6.value;
+    const opts = new Set();
+    if(col){
+      for(const r of rows6){
+        const v = (r[col]==null ? "" : String(r[col]).trim());
+        if(v) opts.add(v);
+      }
+    }
+    const arr = Array.from(opts).sort((a,b)=>a.localeCompare(b));
+    const prev = new Set(Array.from(filterEtab.selectedOptions||[]).map(o=>o.value));
+    filterEtab.innerHTML = arr.map(v=>`<option ${prev.has(v)?'selected':''}>${v}</option>`).join("");
+  }
+
+  lab.textContent = `${file.name} — ${rows.length} lignes`;
+
+  // Auto-préselection: copie des mappings 6e si les en-têtes sont identiques
+  propagateMapping();
+  renderChips(); renderFavChips();
+  refreshRoster();
+}
+f6.addEventListener("change", ()=>onLoad("6"));
+f5.addEventListener("change", ()=>onLoad("5"));
+f4.addEventListener("change", ()=>onLoad("4"));
+/* rafraîchir la liste des établissements quand on change la colonne mappée */
+el("etab6").addEventListener("change", ()=>{
+  const col = etab6.value;
+  const opts = new Set();
+  if(col){
+    for(const r of rows6){
+      const v = (r[col]==null ? "" : String(r[col]).trim());
+      if(v) opts.add(v);
+    }
+  }
+  const arr = Array.from(opts).sort((a,b)=>a.localeCompare(b));
+  const prev = new Set(Array.from(filterEtab.selectedOptions||[]).map(o=>o.value));
+  filterEtab.innerHTML = arr.map(v=>`<option ${prev.has(v)?'selected':''}>${v}</option>`).join("");
+});
+
+// Ajoute la propagation après modification manuelle d'un mapping 6e
+[nom6, pre6, dn6, sexe6, item6, nom5, pre5, dn5, sexe5, item5, nom4, pre4, dn4, sexe4, item4].forEach(s => {
+  if(!s) return;
+  s.addEventListener('change', ()=>{
+    propagateMapping();
+    if(s === item6) alignSkillColumns();
+    renderChips();
+  });
+});
+function matrixToCsv(name, M){
+  const rows = [['', ...CATS], ...CATS.map((r,i)=>[r, ...CATS.map((c,j)=>M[i][j])])];
+  const csv = rows.map(r=>r.join(';')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${name}.csv`; a.click();
+}
+function makeNameMatrix(){
+  return Array.from({length:3}, ()=>Array.from({length:3}, ()=>[]));
+}
+if(btnCsv){
+  btnCsv.addEventListener('click', ()=>{
+    const res = buildMatrices(); if(!res) return;
+    if(res.has5){
+      matrixToCsv('global_6e5e', res.mat65);
+      matrixToCsv('global_5e4e', res.mat54);
+      matrixToCsv('filles_6e5e', res.mat65F);
+      matrixToCsv('filles_5e4e', res.mat54F);
+      matrixToCsv('garcons_6e5e', res.mat65G);
+      matrixToCsv('garcons_5e4e', res.mat54G);
+    }else{
+      matrixToCsv('global_6e4e', res.mat64);
+      matrixToCsv('filles_6e4e', res.mat64F);
+      matrixToCsv('garcons_6e4e', res.mat64G);
+    }
+  });
+}
+
+let SNAP_A = null, SNAP_B = null;
+function makeEmptyFlowData(){
+  return {rows:[], total:0};
+}
+let FLOW_DATA = {
+  global:makeEmptyFlowData(),
+  filles:makeEmptyFlowData(),
+  garcons:makeEmptyFlowData()
+};
+let FLOW_VISIBLE_ROWS = [];
+let flowMode = 'global';
+let flowSortKey = 'value';
+let flowSortDir = 'desc';
+const flowFilterState = { search:'', progression:true, stagnation:true, decrochage:true };
+function cloneRes(res){
+  return JSON.parse(JSON.stringify(res));
+}
+function renderCompare(){
+  const A = SNAP_A, B = SNAP_B;
+  if(!plotA || !plotB) return;
+  if(!A && !B){ Plotly.purge(plotA); Plotly.purge(plotB); deltaAB.innerHTML=''; metaA.textContent=''; metaB.textContent=''; return; }
+  function plotFrom(res, target, title){
+    if(!res){ Plotly.purge(target); return; }
+    if(res.has5){
+      const g = toSankey3(res.mat65, res.mat54);
+      Plotly.newPlot(target, [{type:'sankey', node:{label:g.nodes, color:g.ncolor, pad:15, thickness:18}, link:{source:g.source, target:g.target, value:g.value, color:g.lcolor}}], {margin:{l:10,r:10,t:30,b:10}, title}, {displaylogo:false});
+    }else{
+      const g = toSankey2(res.mat64);
+      Plotly.newPlot(target, [{type:'sankey', node:{label:g.nodes, color:g.ncolor, pad:15, thickness:18}, link:{source:g.source, target:g.target, value:g.value, color:g.lcolor}}], {margin:{l:10,r:10,t:30,b:10}, title}, {displaylogo:false});
+    }
+  }
+  plotFrom(A, plotA, 'Année A'); metaA.textContent = A ? summaryRes(A) : '';
+  plotFrom(B, plotB, 'Année B'); metaB.textContent = B ? summaryRes(B) : '';
+  // delta table
+  if(A && B){
+    const md = buildDeltaMarkdown(A,B);
+    deltaAB.innerHTML = marked.parse(md);
+  } else {
+    deltaAB.innerHTML = '';
+  }
+  if (A && B) { renderHeatAndBar(A, B); }
+}
+function summaryRes(r){
+  if(r.has5){
+    return `Match 6→5: ${r.nMatch65} · 5→4: ${r.nMatch54}`;
+  } else {
+    return `Match 6→4: ${r.nMatch64}`;
+  }
+}
+function buildDeltaMarkdown(A,B){
+  function delta(a,b){ return (b-a); }
+  let lines = ['| Transition | Δ (B−A) |','|---:|---:|'];
+  function pushMat(tag, MA, MB){
+    for(let i=0;i<3;i++){
+      for(let j=0;j<3;j++){
+        const t = `${tag} ${CATS[i]} → ${CATS[j]}`;
+        const d = delta(MA[i][j], MB[i][j]);
+        if(d!==0) lines.push(`| ${t} | ${d>0?'▲':''}${d} |`);
+      }
+    }
+  }
+  if(A.has5 && B.has5){
+    pushMat('6→5', A.mat65, B.mat65);
+    pushMat('5→4', A.mat54, B.mat54);
+  } else if(!A.has5 && !B.has5){
+    pushMat('6→4', A.mat64, B.mat64);
+  } else {
+    lines.push('| ⚠️ Types différents | — |');
+  }
+  return lines.join('\n');
+}
+
+function deltaMatrices(A,B){
+  function zero(){ return [[0,0,0],[0,0,0],[0,0,0]]; }
+  function sub(Ma,Mb){ const M=zero(); for(let i=0;i<3;i++) for(let j=0;j<3;j++) M[i][j] = Mb[i][j] - Ma[i][j]; return M; }
+  if(A.has5 && B.has5){
+    return { kind:'3col', M65: sub(A.mat65,B.mat65), M54: sub(A.mat54,B.mat54) };
+  } else if(!A.has5 && !B.has5){
+    return { kind:'2col', M64: sub(A.mat64,B.mat64) };
+  }
+  return { kind:'incompatible' };
+}
+
+function computeKpisFromRes(res){
+  function agg(M){
+    let prog=0, stag=0, drop=0, total=0;
+    for(let i=0;i<3;i++){
+      for(let j=0;j<3;j++){
+        const v = M[i][j]||0;
+        total += v;
+        if(j>i) prog += v; else if(j===i) stag += v; else drop += v;
+      }
+    }
+    return {prog,stag,drop,total};
+  }
+  if(res.has5){
+    const a = agg(res.mat65); const b = agg(res.mat54);
+    return { prog:a.prog+b.prog, stag:a.stag+b.stag, drop:a.drop+b.drop, total:a.total+b.total };
+  } else {
+    return agg(res.mat64);
+  }
+}
+
+function renderHeatAndBar(A,B){
+  const H = deltaMatrices(A,B);
+  const heatEl = document.getElementById('heatAB');
+  const barEl  = document.getElementById('barAB');
+  if(!heatEl || !barEl) return;
+  if(H.kind==='incompatible'){ Plotly.purge(heatEl); Plotly.purge(barEl); return; }
+
+  function heatFor(M, title){
+    return {
+      data:[{type:'heatmap', z:M, x:CATS, y:CATS, colorscale:[[0,'#f0f9ff'],[0.5,'#d1fae5'],[1,'#fecaca']], zmid:0}],
+      layout:{margin:{l:40,r:10,t:30,b:30}, title, yaxis:{autorange:'reversed'}}
+    };
+  }
+  function barFor(M, title){
+    const col = [0,1,2].map(j => (M[0][j]+M[1][j]+M[2][j]));
+    return {
+      data:[{type:'bar', x:CATS, y:col, text:col.map(v=> (v>0?'▲':'')+v), textposition:'auto'}],
+      layout:{margin:{l:40,r:10,t:30,b:30}, title}
+    };
+  }
+
+  if(H.kind==='3col'){
+    const h65 = heatFor(H.M65, 'Δ 6e → 5e (B−A)');
+    const b65 = barFor(H.M65,  'Δ par destination (6e→5e)');
+    Plotly.newPlot(heatEl, h65.data, h65.layout, {displaylogo:false});
+    Plotly.newPlot(barEl,  b65.data, b65.layout, {displaylogo:false});
+  } else {
+    const h64 = heatFor(H.M64, 'Δ 6e → 4e (B−A)');
+    const b64 = barFor(H.M64,  'Δ par destination (6e→4e)');
+    Plotly.newPlot(heatEl, h64.data, h64.layout, {displaylogo:false});
+    Plotly.newPlot(barEl,  b64.data, b64.layout, {displaylogo:false});
+  }
+}
+
+function matricesForMode(res, mode){
+  if(!res) return [];
+  if(res.has5){
+    if(mode==='filles'){
+      return [
+        {step:'6e → 5e', matrix: res.mat65F, names: res.names65F},
+        {step:'5e → 4e', matrix: res.mat54F, names: res.names54F}
+      ];
+    }
+    if(mode==='garcons'){
+      return [
+        {step:'6e → 5e', matrix: res.mat65G, names: res.names65G},
+        {step:'5e → 4e', matrix: res.mat54G, names: res.names54G}
+      ];
+    }
+    return [
+      {step:'6e → 5e', matrix: res.mat65, names: res.names65},
+      {step:'5e → 4e', matrix: res.mat54, names: res.names54}
+    ];
+  }
+  if(mode==='filles'){
+    return [{step:'6e → 4e', matrix: res.mat64F, names: res.names64F}];
+  }
+  if(mode==='garcons'){
+    return [{step:'6e → 4e', matrix: res.mat64G, names: res.names64G}];
+  }
+  return [{step:'6e → 4e', matrix: res.mat64, names: res.names64}];
+}
+
+function sumMatrix(matrix){
+  let total = 0;
+  for(let i=0;i<3;i++){
+    for(let j=0;j<3;j++){
+      total += Number(matrix?.[i]?.[j] || 0);
+    }
+  }
+  return total;
+}
+
+function buildFlowTableData(res, mode='global'){
+  if(!res) return makeEmptyFlowData();
+  const steps = matricesForMode(res, mode);
+  if(!steps.length) return makeEmptyFlowData();
+  const total = steps.reduce((acc,{matrix})=> acc + sumMatrix(matrix), 0);
+  const rows = [];
+  const meta = {
+    progression:{label:'Progression', arrow:'↑'},
+    stagnation:{label:'Stagnation', arrow:'→'},
+    decrochage:{label:'Décrochage', arrow:'↓'}
+  };
+  steps.forEach(({step, matrix, names})=>{
+    for(let i=0;i<3;i++){
+      for(let j=0;j<3;j++){
+        const value = Number(matrix?.[i]?.[j] || 0);
+        if(!value) continue;
+        const source = CATS[i];
+        const target = CATS[j];
+        const diff = j - i;
+        const kind = diff>0 ? 'progression' : (diff===0 ? 'stagnation' : 'decrochage');
+        const info = meta[kind];
+        const pct = total ? Math.round(1000*value/total)/10 : 0;
+        const displayKind = `${info.arrow} ${info.label}`;
+        const pctString = pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1);
+        const pctText = pctString.replace('.', ',');
+        const nameList = Array.isArray(names?.[i]?.[j]) ? names[i][j] : [];
+        rows.push({
+          step,
+          source,
+          target,
+          value,
+          pct,
+          pctText,
+          kind,
+          displayKind,
+          search:(`${step} ${source} ${target} ${displayKind} ${value} ${pctText} ${nameList.join(' ')}`).toLowerCase(),
+          names: nameList.slice(),
+          mode
+        });
+      }
+    }
+  });
+  return {rows, total};
+}
+
+function filterRowsByKinds(rows){
+  return rows.filter(r => {
+    if(r.kind==='progression' && !flowFilterState.progression) return false;
+    if(r.kind==='stagnation' && !flowFilterState.stagnation) return false;
+    if(r.kind==='decrochage' && !flowFilterState.decrochage) return false;
+    return true;
+  });
+}
+
+function applyFlowFilters(rows){
+  let list = filterRowsByKinds(rows);
+  const search = flowFilterState.search;
+  if(search){
+    list = list.filter(r => r.search.includes(search));
+  }
+  return list;
+}
+
+function syncFlowFilterState(){
+  flowFilterState.progression = flowFilterProg ? !!flowFilterProg.checked : true;
+  flowFilterState.stagnation  = flowFilterStag ? !!flowFilterStag.checked : true;
+  flowFilterState.decrochage  = flowFilterDrop ? !!flowFilterDrop.checked : true;
+}
+
+function updateFlowSortIndicators(){
+  if(!flowTableWrap) return;
+  const headers = flowTableWrap.querySelectorAll('th[data-sort]');
+  headers.forEach(th=>{
+    const key = th.dataset.sort;
+    const ind = th.querySelector('.sort-indicator');
+    if(!ind) return;
+    if(key === flowSortKey){
+      th.classList.add('sorted');
+      ind.textContent = flowSortDir === 'asc' ? '▲' : '▼';
+    } else {
+      th.classList.remove('sorted');
+      ind.textContent = '';
+    }
+  });
+}
+
+function updateFlowModeButtons(){
+  if(!flowModeButtons.length) return;
+  flowModeButtons.forEach(btn=>{
+    const mode = btn.dataset.flowMode;
+    const hasData = !!(mode && FLOW_DATA[mode] && FLOW_DATA[mode].rows.length);
+    btn.classList.toggle('active', mode === flowMode);
+    btn.disabled = !hasData;
+    btn.setAttribute('aria-pressed', mode === flowMode ? 'true' : 'false');
+    btn.setAttribute('aria-disabled', hasData ? 'false' : 'true');
+  });
+}
+
+function updateFlowSummary(dataset){
+  if(!flowTableSummary) return;
+  const baseRows = filterRowsByKinds(dataset.rows || []);
+  if(!baseRows.length){
+    flowTableSummary.style.display='none';
+    flowTableSummary.innerHTML = '';
+    return;
+  }
+  const progs = baseRows.filter(r=>r.kind==='progression').sort((a,b)=>b.value - a.value).slice(0,3);
+  const drops = baseRows.filter(r=>r.kind==='decrochage').sort((a,b)=>b.value - a.value).slice(0,3);
+  const stags = baseRows.filter(r=>r.kind==='stagnation').sort((a,b)=>b.value - a.value).slice(0,3);
+  const makeList = (rows)=> rows.map(r=>`<li><strong>${r.step}</strong> · ${r.source} → ${r.target} (${r.value} élèves · ${r.pctText}%)</li>`).join('');
+  const cards = [];
+  if(progs.length){
+    cards.push(`<div class="flow-card flow-card-prog"><h4>↑ Progressions</h4><ul>${makeList(progs)}</ul></div>`);
+  }
+  if(stags.length){
+    cards.push(`<div class="flow-card flow-card-stag"><h4>→ Stagnations</h4><ul>${makeList(stags)}</ul></div>`);
+  }
+  if(drops.length){
+    cards.push(`<div class="flow-card flow-card-drop"><h4>↓ Décrochages</h4><ul>${makeList(drops)}</ul></div>`);
+  }
+  if(!cards.length){
+    flowTableSummary.style.display='none';
+    flowTableSummary.innerHTML = '';
+    return;
+  }
+  flowTableSummary.innerHTML = `<div class="flow-summary-cards">${cards.join('')}</div>`;
+  flowTableSummary.style.display='';
+}
+
+function clearFlowDetails(){
+  if(flowTableBody){
+    flowTableBody.querySelectorAll('tr.selected').forEach(el=>el.classList.remove('selected'));
+  }
+  if(flowTableDetails){
+    flowTableDetails.style.display='none';
+    flowTableDetails.innerHTML = '';
+  }
+}
+
+function triggerTableAnimation(){
+  if(!flowTableBody) return;
+  flowTableBody.classList.remove('flow-table-anim');
+  void flowTableBody.offsetWidth;
+  flowTableBody.classList.add('flow-table-anim');
+  if(flowTableSummary){
+    flowTableSummary.classList.remove('flow-table-anim');
+    void flowTableSummary.offsetWidth;
+    flowTableSummary.classList.add('flow-table-anim');
+  }
+}
+
+function showFlowDetails(row, tr){
+  if(!flowTableDetails || !row) return;
+  const names = Array.isArray(row.names) ? row.names : [];
+  const formatted = names
+    .map(name => String(name||'').trim())
+    .filter(Boolean)
+    .sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
+  const modeLabel = row.mode==='filles' ? 'Filles' : row.mode==='garcons' ? 'Garçons' : 'Global';
+  const header = `${modeLabel} · ${row.step} · ${row.source} → ${row.target} (${formatted.length} élève(s))`;
+  const body = formatted.length
+    ? `<ol class="flow-names">${formatted.map(n=>`<li>${n}</li>`).join('')}</ol>`
+    : `<span class="muted">Aucun élève identifié.</span>`;
+  flowTableDetails.innerHTML = `<h4>${header}</h4>${body}`;
+  flowTableDetails.style.display='';
+  if(flowTableBody){
+    flowTableBody.querySelectorAll('tr.selected').forEach(el=>{ if(el!==tr) el.classList.remove('selected'); });
+  }
+  if(tr){
+    tr.classList.add('selected');
+  }
+}
+
+function renderFlowTableRows(){
+  clearFlowDetails();
+  if(!flowTableWrap || !flowTableBody) return;
+  const dataset = FLOW_DATA[flowMode] || makeEmptyFlowData();
+  updateFlowModeButtons();
+  updateFlowSummary(dataset);
+  if(!dataset.rows.length){
+    flowTableBody.innerHTML = `<tr class="no-data-row"><td colspan="6" class="muted">Aucune transition pour cette vue.</td></tr>`;
+    if(flowTableEmpty) flowTableEmpty.style.display='none';
+    if(flowTableCount) flowTableCount.textContent = '';
+    FLOW_VISIBLE_ROWS = [];
+    return;
+  }
+  let rows = applyFlowFilters(dataset.rows);
+  rows.sort((a,b)=>{
+    const ka = a[flowSortKey];
+    const kb = b[flowSortKey];
+    if(typeof ka === 'number' && typeof kb === 'number'){
+      return flowSortDir === 'asc' ? ka - kb : kb - ka;
+    }
+    return flowSortDir === 'asc'
+      ? String(ka).localeCompare(String(kb))
+      : String(kb).localeCompare(String(ka));
+  });
+  FLOW_VISIBLE_ROWS = rows;
+  if(rows.length){
+    flowTableBody.innerHTML = rows.map((r, idx)=>{
+      const pill = `<span class="flow-pill flow-${r.kind}">${r.displayKind}</span>`;
+      return `
+      <tr data-row-index="${idx}" data-kind="${r.kind}" title="Voir le détail des élèves">
+        <td>${r.step}</td>
+        <td>${r.source}</td>
+        <td>${r.target}</td>
+        <td>${pill}</td>
+        <td>${r.value}</td>
+        <td>${r.pctText}</td>
+      </tr>`;
+    }).join('');
+    if(flowTableEmpty) flowTableEmpty.style.display='none';
+  } else {
+    flowTableBody.innerHTML = '';
+    if(flowTableEmpty) flowTableEmpty.style.display='';
+  }
+  if(flowTableCount){
+    const totalFlows = rows.reduce((acc,r)=>acc+r.value,0);
+    flowTableCount.textContent = `${rows.length} transition(s) · ${totalFlows} élève(s)`;
+  }
+  updateFlowSortIndicators();
+  triggerTableAnimation();
+}
+
+function renderFlowTable(res){
+  if(!flowTableWrap || !flowTableBody){
+    FLOW_DATA = {
+      global:makeEmptyFlowData(),
+      filles:makeEmptyFlowData(),
+      garcons:makeEmptyFlowData()
+    };
+    FLOW_VISIBLE_ROWS = [];
+    flowMode = 'global';
+    updateFlowModeButtons();
+    if(flowTableSummary){
+      flowTableSummary.style.display='none';
+      flowTableSummary.innerHTML = '';
+    }
+    clearFlowDetails();
+    return;
+  }
+  if(!res){
+    flowTableWrap.style.display='none';
+    FLOW_DATA = {
+      global:makeEmptyFlowData(),
+      filles:makeEmptyFlowData(),
+      garcons:makeEmptyFlowData()
+    };
+    FLOW_VISIBLE_ROWS = [];
+    flowMode = 'global';
+    flowSortKey = 'value';
+    flowSortDir = 'desc';
+    if(flowTableBody) flowTableBody.innerHTML = `<tr><td colspan="6" class="muted">Clique «&nbsp;Générer&nbsp;» pour afficher le détail des flux.</td></tr>`;
+    if(flowTableEmpty) flowTableEmpty.style.display='none';
+    if(flowTableCount) flowTableCount.textContent = '';
+    if(flowTableSummary){
+      flowTableSummary.style.display='none';
+      flowTableSummary.innerHTML = '';
+    }
+    updateFlowModeButtons();
+    clearFlowDetails();
+    return;
+  }
+  FLOW_DATA = {
+    global: buildFlowTableData(res, 'global'),
+    filles: buildFlowTableData(res, 'filles'),
+    garcons: buildFlowTableData(res, 'garcons')
+  };
+  const availableEntry = Object.entries(FLOW_DATA).find(([,data])=>data.rows.length);
+  if(!availableEntry){
+    flowTableWrap.style.display='none';
+    FLOW_VISIBLE_ROWS = [];
+    if(flowTableCount) flowTableCount.textContent = '';
+    if(flowTableSummary){
+      flowTableSummary.style.display='none';
+      flowTableSummary.innerHTML = '';
+    }
+    updateFlowModeButtons();
+    clearFlowDetails();
+    return;
+  }
+  if(!FLOW_DATA[flowMode] || !FLOW_DATA[flowMode].rows.length){
+    flowMode = availableEntry[0];
+  }
+  flowTableWrap.style.display='';
+  renderFlowTableRows();
+}
+
+if(btnSnapA){
+  btnSnapA.addEventListener('click', ()=>{
+    const r = buildMatrices(); if(!r) return;
+    SNAP_A = cloneRes(r);
+    renderCompare();
+  });
+}
+if(btnSnapB){
+  btnSnapB.addEventListener('click', ()=>{
+    const r = buildMatrices(); if(!r) return;
+    SNAP_B = cloneRes(r);
+    renderCompare();
+  });
+}
+
+if(flowTableSearch){
+  flowFilterState.search = String(flowTableSearch.value||'').trim().toLowerCase();
+  flowTableSearch.addEventListener('input', ()=>{
+    flowFilterState.search = String(flowTableSearch.value||'').trim().toLowerCase();
+    renderFlowTableRows();
+  });
+}
+const flowFilterInputs = [flowFilterProg, flowFilterStag, flowFilterDrop].filter(Boolean);
+if(flowFilterInputs.length){
+  syncFlowFilterState();
+  flowFilterInputs.forEach(input=>{
+    input.addEventListener('change', ()=>{
+      syncFlowFilterState();
+      renderFlowTableRows();
+    });
+  });
+}
+if(flowModeButtons.length){
+  flowModeButtons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(btn.disabled) return;
+      const mode = btn.dataset.flowMode;
+      if(!mode || mode === flowMode) return;
+      flowMode = mode;
+      renderFlowTableRows();
+    });
+  });
+}
+if(flowTableBody){
+  flowTableBody.addEventListener('click', (ev)=>{
+    const tr = ev.target.closest('tr[data-row-index]');
+    if(!tr) return;
+    const idx = Number(tr.dataset.rowIndex);
+    if(Number.isNaN(idx) || idx<0) return;
+    if(tr.classList.contains('selected')){
+      clearFlowDetails();
+      return;
+    }
+    const row = FLOW_VISIBLE_ROWS[idx];
+    if(!row) return;
+    showFlowDetails(row, tr);
+  });
+}
+if(flowTableWrap){
+  const head = flowTableWrap.querySelector('thead');
+  if(head){
+    head.addEventListener('click', (ev)=>{
+      const th = ev.target.closest('th.sortable');
+      if(!th || !th.dataset.sort) return;
+      const key = th.dataset.sort;
+      if(flowSortKey === key){
+        flowSortDir = flowSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        flowSortKey = key;
+        flowSortDir = (key==='value' || key==='pct') ? 'desc' : 'asc';
+      }
+      renderFlowTableRows();
+    });
+  }
+}
+if(btnFlowExport){
+  btnFlowExport.addEventListener('click', ()=>{
+    const hasAnyData = Object.values(FLOW_DATA).some(d => d.rows.length);
+    if(!hasAnyData){ alert('Génère le Sankey avant d’exporter.'); return; }
+    const dataset = FLOW_DATA[flowMode] || makeEmptyFlowData();
+    if(!dataset.rows.length){ alert('Aucune donnée à exporter pour cette vue.'); return; }
+    const rows = FLOW_VISIBLE_ROWS.length ? FLOW_VISIBLE_ROWS : applyFlowFilters(dataset.rows);
+    if(!rows.length){ alert('Aucune transition ne correspond aux filtres.'); return; }
+    const header = ['Phase','Origine','Destination','Catégorie','Élèves','Part (%)'];
+    const lines = rows.map(r => [r.step, r.source, r.target, r.displayKind, r.value, r.pctText].join(';'));
+    const csv = [header.join(';'), ...lines].join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'detail_flux.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+
+function initialsOf(name){
+  const s = String(name||'').trim();
+  if(!s) return '';
+  const parts = s.split(/\s+/);
+  return parts.map(p=>p[0]?.toUpperCase()||'').join('');
+}
+if(btnExportSelCSV){
+  btnExportSelCSV.addEventListener('click', ()=>{
+    const selKeys = Array.from(lstSel.options||[]).map(o=>o.value);
+    if(!selKeys.length){ alert('Ajoute des élèves à la sélection.'); return; }
+    const keep6 = new Set(selKeys);
+    // Recompute name maps similarly to buildSelectionGraph, but keep full arrays
+    const S6 = rows6.filter(r => keep6.has(key6of(r)));
+    const S5 = rows5.slice();
+    const S4 = rows4.slice();
+    const saveRows4 = rows4, saveRows5 = rows5;
+    rows4 = S4; const idx4 = buildIndex4();
+    rows5 = S5; const idx5 = rows5.length ? buildIndex5() : null;
+    rows4 = saveRows4; rows5 = saveRows5;
+    const filt = normalizeFilterTerm(filterItem.value||"");
+    const names = []; // rows of csv
+    function pushRow(srcLbl, dstLbl, arr){
+      if(!arr.length) return;
+      const label = `${srcLbl} → ${dstLbl}`;
+      const text = arr.map(n => rgpdInitiales && rgpdInitiales.checked ? initialsOf(n) : n).join(' ; ');
+      names.push([label, arr.length, text]);
+    }
+    const map65=new Map(), map54=new Map(), map64=new Map();
+    function K(i,j){ return `${i}-${j}`; }
+    const useEtab = Array.from(filterEtab?.selectedOptions || []).map(o=>o.value);
+    const useEtabSet = new Set(useEtab.map(v=>normEtab(v)));
+    const useEtabFilter = useEtabSet.size>0 && !!etab6.value;
+
+    if(S5.length){
+      for(const r6 of S6){
+        if(useEtabFilter){
+          const etabVal = etab6.value ? normEtab(r6[etab6.value]) : "";
+          if(!useEtabSet.has(etabVal)) continue;
+        }
+        const _nom = nom6.value ? r6[nom6.value] : "";
+        const _pre = pre6.value ? r6[pre6.value] : "";
+        const labelName = `${String(_nom||'').trim()} ${String(_pre||'').trim()}`.trim();
+        const _dn  = dn6.value  ? fmtDate(r6[dn6.value]) : "";
+        const _sx  = mapSexe(sexe6.value ? r6[sexe6.value] : "");
+        const NP   = normName(_nom,_pre);
+        const NPD  = _dn ? (NP+" "+_dn) : "";
+        const NPS  = (NP+" "+_sx).trim();
+        const Swap = normNameSwapped(_nom,_pre);
+        const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+        function pick(map,key){ if(!map||!key||!map.has(key)) return null; const a=map.get(key); if(a.length===1) return a[0]; return a[0]||null; }
+        let mate5 = null;
+        if(!mate5 && NPD) mate5 = pick(idx5.byNPD, NPD);
+        if(!mate5 && NPS) mate5 = pick(idx5.byNPS, NPS);
+        if(!mate5 && NP ) mate5 = pick(idx5.byNP,  NP );
+        if(!mate5 && Swap)mate5 = pick(idx5.bySwap,Swap);
+        if(!mate5 && NP1) mate5 = pick(idx5.byNP_firstGiven, NP1);
+        if(!mate5) continue;
+        if(filt){
+          const ok6 = matchesSkillFilter(r6, item6.value, filt);
+          const ok5 = matchesSkillFilter(mate5, item5.value, filt);
+          if(!ok6 && !ok5) continue;
+        }
+        const c6 = catFromRow(r6, item6.value); const c5 = catFromRow(mate5, item5.value);
+        if(c6==='NR'||c5==='NR') continue;
+        const i=CATS.indexOf(c6), j=CATS.indexOf(c5);
+        const key=K(i,j); const arr=map65.get(key)||[]; arr.push(labelName); map65.set(key,arr);
+
+        // 5->4
+        const _nom5 = nom5.value ? mate5[nom5.value] : "";
+        const _pre5 = pre5.value ? mate5[pre5.value] : "";
+        const labelName5 = labelName; // carry 6e label
+        const _dn5  = dn5.value  ? fmtDate(mate5[dn5.value]) : "";
+        const _sx5  = mapSexe(sexe5.value ? mate5[sexe5.value] : "");
+        const NP5   = normName(_nom5,_pre5);
+        const NPD5  = _dn5 ? (NP5+" "+_dn5) : "";
+        const NPS5  = (NP5+" "+_sx5).trim();
+        const Swap5 = normNameSwapped(_nom5,_pre5);
+        const NP15  = (normToken(_nom5)+" "+firstGivenName(_pre5)).trim();
+        function pick2(map,key){ if(!map||!key||!map.has(key)) return null; const a=map.get(key); if(a.length===1) return a[0]; return a[0]||null; }
+        let mate4 = null;
+        if(!mate4 && NPD5) mate4 = pick2(idx4.byNPD, NPD5);
+        if(!mate4 && NPS5) mate4 = pick2(idx4.byNPS, NPS5);
+        if(!mate4 && NP5 ) mate4 = pick2(idx4.byNP,  NP5 );
+        if(!mate4 && Swap5)mate4 = pick2(idx4.bySwap,Swap5);
+        if(!mate4 && NP15) mate4 = pick2(idx4.byNP_firstGiven, NP15);
+        if(!mate4) continue;
+        if(filt){
+          const ok5b = matchesSkillFilter(mate5, item5.value, filt);
+          const ok4  = matchesSkillFilter(mate4, item4.value, filt);
+          if(!ok5b && !ok4) continue;
+        }
+        const c4 = catFromRow(mate4, item4.value); if(c4==='NR') continue;
+        const i2=CATS.indexOf(c5), j2=CATS.indexOf(c4);
+        const key2=K(i2,j2); const arr2=map54.get(key2)||[]; arr2.push(labelName5); map54.set(key2,arr2);
+      }
+      // Emit CSV
+      const recs=[['Transition','Effectif','Noms']];
+      CATS.forEach((A,ia)=>CATS.forEach((B,jb)=>{ const arr=map65.get(K(ia,jb))||[]; if(arr.length) recs.push([`6e: ${A} → 5e: ${B}`, arr.length, arr.join(' ; ')]); }));
+      CATS.forEach((A,ia)=>CATS.forEach((B,jb)=>{ const arr=map54.get(K(ia,jb))||[]; if(arr.length) recs.push([`5e: ${A} → 4e: ${B}`, arr.length, arr.join(' ; ')]); }));
+      const csv = recs.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');
+      const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='selection_transitions.csv'; a.click();
+    } else {
+      // 6 -> 4 direct
+      for(const r6 of S6){
+        if(useEtabFilter){
+          const etabVal = etab6.value ? normEtab(r6[etab6.value]) : "";
+          if(!useEtabSet.has(etabVal)) continue;
+        }
+        const _nom = nom6.value ? r6[nom6.value] : "";
+        const _pre = pre6.value ? r6[pre6.value] : "";
+        const labelName = `${String(_nom||'').trim()} ${String(_pre||'').trim()}`.trim();
+        const _dn  = dn6.value  ? fmtDate(r6[dn6.value]) : "";
+        const _sx  = mapSexe(sexe6.value ? r6[sexe6.value] : "");
+        const NP   = normName(_nom,_pre);
+        const NPD  = _dn ? (NP+" "+_dn) : "";
+        const NPS  = (NP+" "+_sx).trim();
+        const Swap = normNameSwapped(_nom,_pre);
+        const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+        function pick4(map,key){ if(!map||!key||!map.has(key)) return null; const a=map.get(key); if(a.length===1) return a[0]; return a[0]||null; }
+        let mate4=null;
+        if(!mate4 && NPD) mate4 = pick4(idx4.byNPD, NPD);
+        if(!mate4 && NPS) mate4 = pick4(idx4.byNPS, NPS);
+        if(!mate4 && NP ) mate4 = pick4(idx4.byNP,  NP );
+        if(!mate4 && Swap)mate4 = pick4(idx4.bySwap,Swap);
+        if(!mate4 && NP1) mate4 = pick4(idx4.byNP_firstGiven, NP1);
+        if(!mate4) continue;
+        if(filt){
+          const ok6 = matchesSkillFilter(r6, item6.value, filt);
+          const ok4 = matchesSkillFilter(mate4, item4.value, filt);
+          if(!ok6 && !ok4) continue;
+        }
+        const c6 = catFromRow(r6, item6.value); const c4 = catFromRow(mate4, item4.value);
+        if(c6==='NR'||c4==='NR') continue;
+        const i=CATS.indexOf(c6), j=CATS.indexOf(c4);
+        const key=K(i,j); const arr=map64.get(key)||[]; arr.push(labelName); map64.set(key,arr);
+      }
+      const recs=[['Transition','Effectif','Noms']];
+      CATS.forEach((A,ia)=>CATS.forEach((B,jb)=>{ const arr=map64.get(K(ia,jb))||[]; if(arr.length) recs.push([`6e: ${A} → 4e: ${B}`, arr.length, arr.join(' ; ')]); }));
+      const csv = recs.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');
+      const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='selection_transitions.csv'; a.click();
+    }
+  });
+}
+
+/* ===== Index 4e & 5e multi-clés ===== */
+function buildIndex4(){
+  const I = {
+    byNPD: new Map(),
+    byNP: new Map(),
+    byNPS: new Map(),
+    bySwap: new Map(),
+    byNP_firstGiven: new Map()
+  };
+  for(const r of rows4){
+    const _nom = nom4.value ? r[nom4.value] : "";
+    const _pre = pre4.value ? r[pre4.value] : "";
+    const _dn  = dn4.value  ? fmtDate(r[dn4.value]) : "";
+    const _sx  = mapSexe(sexe4.value ? r[sexe4.value] : "");
+    const kNP  = normName(_nom,_pre);
+    const kSwap= normNameSwapped(_nom,_pre);
+    const kNPD = _dn ? (kNP+" "+_dn) : "";
+    const kNPS = (kNP+" "+_sx).trim();
+    const kNP1 = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+    function add(map,key,row){
+      if(!key) return;
+      const arr = map.get(key)||[];
+      arr.push(row);
+      map.set(key,arr);
+    }
+    if(kNPD) add(I.byNPD, kNPD, r);
+    if(kNP)  add(I.byNP,  kNP,  r);
+    if(kNPS) add(I.byNPS, kNPS, r);
+    if(kSwap) add(I.bySwap, kSwap, r);
+    if(kNP1)  add(I.byNP_firstGiven, kNP1, r);
+  }
+  return I;
+}
+function buildIndex5(){
+  const I = {
+    byNPD: new Map(),
+    byNP: new Map(),
+    byNPS: new Map(),
+    bySwap: new Map(),
+    byNP_firstGiven: new Map()
+  };
+  for(const r of rows5){
+    const _nom = nom5.value ? r[nom5.value] : "";
+    const _pre = pre5.value ? r[pre5.value] : "";
+    const _dn  = dn5.value  ? fmtDate(r[dn5.value]) : "";
+    const _sx  = mapSexe(sexe5.value ? r[sexe5.value] : "");
+    const kNP  = normName(_nom,_pre);
+    const kSwap= normNameSwapped(_nom,_pre);
+    const kNPD = _dn ? (kNP+" "+_dn) : "";
+    const kNPS = (kNP+" "+_sx).trim();
+    const kNP1 = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+    function add(map,key,row){
+      if(!key) return;
+      const arr = map.get(key)||[];
+      arr.push(row);
+      map.set(key,arr);
+    }
+    if(kNPD) add(I.byNPD, kNPD, r);
+    if(kNP)  add(I.byNP,  kNP,  r);
+    if(kNPS) add(I.byNPS, kNPS, r);
+    if(kSwap) add(I.bySwap, kSwap, r);
+    if(kNP1)  add(I.byNP_firstGiven, kNP1, r);
+  }
+  return I;
+}
+
+/* ===== Catégorisation ===== */
+function catFromRow(r, itemSel){
+  if(itemSel){ const c = fgFromLabel(r[itemSel]); if(c!=="NR") return c; }
+  const c3 = autoLabelFromAnyTextRow(r);
+  if(c3 !== "NR") return c3;
+  const c4 = autoFromNumericRow(r);
+  return c4;
+}
+
+// Clé stable pour 5e (évite les soucis d'identité objet en Set)
+function key5of(r){
+  const _nom = nom5.value ? r[nom5.value] : "";
+  const _pre = pre5.value ? r[pre5.value] : "";
+  const _dn  = dn5.value  ? fmtDate(r[dn5.value]) : "";
+  const _sx  = mapSexe(sexe5.value ? r[sexe5.value] : "");
+  const NP   = normName(_nom,_pre);
+  const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+  // Priorité à NP+DN, puis NP+SX, puis NP, puis NP1 (1er prénom)
+  const k1 = _dn ? (NP+"|DN|"+_dn) : "";
+  const k2 = (NP+"|SX|"+_sx);
+  return k1 || k2 || ("NP|"+NP) || ("NP1|"+NP1);
+}
+
+/* ===== Coeur : appariement robuste + matrices 6→5 et 5→4 ===== */
+function buildMatrices(){
+  // Besoin minimum : 6e + 4e. 5e est optionnel.
+  if(!rows6.length || !rows4.length){
+    diag.innerHTML = `<span class="warn">Charge au minimum les fichiers 6e et 4e (le fichier 5e est optionnel).</span>`;
+    return null;
+  }
+  if(!nom6.value || !pre6.value || !nom4.value || !pre4.value){
+    diag.innerHTML = `<span class="warn">Mappe au minimum NOM et PRÉNOM pour 6e et 4e (5e si présent).</span>`;
+    return null;
+  }
+
+  const filt = normalizeFilterTerm(filterItem.value||"");
+  const selectedEtab = Array.from(filterEtab?.selectedOptions || []).map(o=>o.value);
+  const selectedEtabNorm = new Set(selectedEtab.map(v => normEtab(v)));
+  const useEtabFilter = selectedEtabNorm.size > 0 && !!etab6.value;
+
+  // --- Cohorte filtrée par établissement (sélection sur 6e uniquement)
+  let has6AfterFilter = true;
+  if(useEtabFilter){
+    const colE = etab6.value;
+    let any6 = false;
+    for(const r of rows6){
+      const v = normEtab(r[colE]);
+      if(selectedEtabNorm.has(v)){ any6 = true; break; }
+    }
+    has6AfterFilter = any6;
+  }
+
+  const idx4 = buildIndex4();
+  const has5 = !!rows5.length;
+  const idx5 = has5 ? buildIndex5() : null;
+
+  // --- Désambiguïsation: si une clé retourne plusieurs candidats (homonymies),
+  // tente de réduire par DN, puis Sexe, puis 1er prénom. Sinon, prend le 1er.
+  function resolveFromCandidates(arr, dnKey, sexeKey, preKey, wantedDN, wantedSX, wantedPrenom){
+    let a = Array.isArray(arr) ? arr.slice() : [];
+    if(!a.length) return null;
+
+    // 1) Date de naissance stricte si dispo
+    if(wantedDN && dnKey){
+      const m = a.filter(r => fmtDate(r[dnKey]) === wantedDN);
+      if(m.length === 1) return m[0];
+      if(m.length > 1) a = m;
+    }
+    // 2) Sexe si dispo
+    if(wantedSX && sexeKey){
+      const m = a.filter(r => mapSexe(r[sexeKey]) === wantedSX);
+      if(m.length === 1) return m[0];
+      if(m.length > 1) a = m;
+    }
+    // 3) 1er prénom
+    const fg = firstGivenName(wantedPrenom);
+    if(fg && preKey){
+      const m = a.filter(r => firstGivenName(r[preKey]) === fg);
+      if(m.length === 1) return m[0];
+      if(m.length > 1) a = m;
+    }
+    // 4) Sinon, retourne le premier (comportement conservateur)
+    return a[0] || null;
+  }
+
+  // Matrices 3 niveaux
+  const mat65  = [[0,0,0],[0,0,0],[0,0,0]];
+  const mat54  = [[0,0,0],[0,0,0],[0,0,0]];
+  const mat65F = [[0,0,0],[0,0,0],[0,0,0]];
+  const mat65G = [[0,0,0],[0,0,0],[0,0,0]];
+  const mat54F = [[0,0,0],[0,0,0],[0,0,0]];
+  const mat54G = [[0,0,0],[0,0,0],[0,0,0]];
+  const names65  = makeNameMatrix();
+  const names54  = makeNameMatrix();
+  const names65F = makeNameMatrix();
+  const names65G = makeNameMatrix();
+  const names54F = makeNameMatrix();
+  const names54G = makeNameMatrix();
+
+  // 2-étapes direct 6e→4e (si 5e absent)
+  const mat64  = [[0,0,0],[0,0,0],[0,0,0]];
+  const mat64F = [[0,0,0],[0,0,0],[0,0,0]];
+  const mat64G = [[0,0,0],[0,0,0],[0,0,0]];
+  const names64  = makeNameMatrix();
+  const names64F = makeNameMatrix();
+  const names64G = makeNameMatrix();
+
+  // On mémorise des clés stables (strings) plutôt que des références d'objets
+  const allowed5From6 = new Set();
+
+  let n6=rows6.length, n5=rows5.length, n4=rows4.length;
+  let nMatch65=0, nMatch54=0, nMatch64=0;
+  let nAmbig65=0, nAmbig54=0, nAmbig64=0;
+  let nMiss65=0, nMiss54=0, nMiss64=0;
+
+  let viaNPD65=0, viaNPS65=0, viaNP65=0, viaSwap65=0, viaNP165=0;
+  let viaNPD54=0, viaNPS54=0, viaNP54=0, viaSwap54=0, viaNP154=0;
+  let viaNPD64=0, viaNPS64=0, viaNP64=0, viaSwap64=0, viaNP164=0;
+
+  const q = String(qEleve.value||"").trim().toUpperCase();
+
+  if(has5){
+    /* 6e → 5e */
+    for(const r6 of rows6){
+      const _nom = nom6.value ? r6[nom6.value] : "";
+      const _pre = pre6.value ? r6[pre6.value] : "";
+      const _dn  = dn6.value  ? fmtDate(r6[dn6.value]) : "";
+      const _sx  = mapSexe(sexe6.value ? r6[sexe6.value] : "");
+
+      if(useEtabFilter){
+        const etabVal = etab6.value ? normEtab(r6[etab6.value]) : "";
+        if(!selectedEtabNorm.has(etabVal)) continue;
+      }
+
+      const NP   = normName(_nom,_pre);
+      const NPD  = _dn ? (NP+" "+_dn) : "";
+      const NPS  = (NP+" "+_sx).trim();
+      const Swap = normNameSwapped(_nom,_pre);
+      const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+
+      function pick(map,key){
+        if(key && map.has(key)){
+          const arr = map.get(key);
+          if(arr.length === 1) return arr[0];
+          // Tentative de désambiguïsation avec DN/SEXE/1er prénom (cibles = 5e)
+          const cand = resolveFromCandidates(arr, dn5.value, sexe5.value, pre5.value, _dn, _sx, _pre);
+          if(cand) return cand;
+          nAmbig65++;
+        }
+        return null;
+      }
+
+      let mate5 = null;
+      if(!mate5 && NPD){ mate5 = pick(idx5.byNPD, NPD); if(mate5) viaNPD65++; }
+      if(!mate5 && NPS){ mate5 = pick(idx5.byNPS, NPS); if(mate5) viaNPS65++; }
+      if(!mate5 && NP ){ mate5 = pick(idx5.byNP,  NP ); if(mate5) viaNP65++;  }
+      if(!mate5 && Swap){mate5 = pick(idx5.bySwap,Swap); if(mate5) viaSwap65++; }
+      if(!mate5 && NP1){ mate5 = pick(idx5.byNP_firstGiven, NP1); if(mate5) viaNP165++; }
+
+      if(!mate5){ nMiss65++; continue; }
+
+      // Marque d'abord ce 5e comme issu de la cohorte 6e filtrée (clé stable),
+      // AVANT tout filtrage item/catégorie pour ne pas perdre la propagation du filtre établissement.
+      allowed5From6.add(key5of(mate5));
+
+      // Puis seulement on applique d'éventuels filtres d'intitulé
+      if(filt){
+        const ok6 = matchesSkillFilter(r6, item6.value, filt);
+        const ok5 = matchesSkillFilter(mate5, item5.value, filt);
+        if(!ok6 && !ok5) continue;
+      }
+
+      const c6 = catFromRow(r6, item6.value);
+      const c5 = catFromRow(mate5, item5.value);
+      if(c6==="NR" || c5==="NR") continue;
+
+      const i = CATS.indexOf(c6), j = CATS.indexOf(c5);
+      const name6 = `${String(_nom||"").trim()} ${String(_pre||"").trim()}`.trim();
+      mat65[i][j] += 1;
+      if(_sx==="F") mat65F[i][j] += 1; else if(_sx==="G") mat65G[i][j] += 1;
+      names65[i][j].push(name6);
+      if(_sx==="F") names65F[i][j].push(name6); else if(_sx==="G") names65G[i][j].push(name6);
+      nMatch65++;
+    }
+
+    /* 5e → 4e */
+    for(const r5 of rows5){
+      const _nom = nom5.value ? r5[nom5.value] : "";
+      const _pre = pre5.value ? r5[pre5.value] : "";
+      const _dn  = dn5.value  ? fmtDate(r5[dn5.value]) : "";
+      const _sx  = mapSexe(sexe5.value ? r5[sexe5.value] : "");
+
+      // Si un filtre établissement est actif, ne conserver que les 5e issus de la cohorte 6e filtrée (clé stable)
+      if(useEtabFilter){
+        const k5 = key5of(r5);
+        if(!allowed5From6.has(k5)) continue;
+      }
+
+      const NP   = normName(_nom,_pre);
+      const NPD  = _dn ? (NP+" "+_dn) : "";
+      const NPS  = (NP+" "+_sx).trim();
+      const Swap = normNameSwapped(_nom,_pre);
+      const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+
+      function pick2(map,key){
+        if(key && map.has(key)){
+          const arr = map.get(key);
+          if(arr.length === 1) return arr[0];
+          // Désambiguïsation (cibles = 4e)
+          const cand = resolveFromCandidates(arr, dn4.value, sexe4.value, pre4.value, _dn, _sx, _pre);
+          if(cand) return cand;
+          nAmbig54++;
+        }
+        return null;
+      }
+
+      let mate4 = null;
+      if(!mate4 && NPD){ mate4 = pick2(idx4.byNPD, NPD); if(mate4) viaNPD54++; }
+      if(!mate4 && NPS){ mate4 = pick2(idx4.byNPS, NPS); if(mate4) viaNPS54++; }
+      if(!mate4 && NP ){ mate4 = pick2(idx4.byNP,  NP ); if(mate4) viaNP54++;  }
+      if(!mate4 && Swap){mate4 = pick2(idx4.bySwap,Swap); if(mate4) viaSwap54++; }
+      if(!mate4 && NP1){ mate4 = pick2(idx4.byNP_firstGiven, NP1); if(mate4) viaNP154++; }
+
+      if(!mate4){ nMiss54++; continue; }
+
+      if(filt){
+        const ok5 = matchesSkillFilter(r5, item5.value, filt);
+        const ok4 = matchesSkillFilter(mate4, item4.value, filt);
+        if(!ok5 && !ok4) continue;
+      }
+
+      const c5 = catFromRow(r5, item5.value);
+      const c4 = catFromRow(mate4, item4.value);
+      if(c5==="NR" || c4==="NR") continue;
+
+      const i = CATS.indexOf(c5), j = CATS.indexOf(c4);
+      const name5 = `${String(_nom||"").trim()} ${String(_pre||"").trim()}`.trim();
+      mat54[i][j] += 1;
+      const sx = _sx !== "U" ? _sx : mapSexe(sexe4.value ? mate4[sexe4.value] : "");
+      if(sx==="F") mat54F[i][j] += 1; else if(sx==="G") mat54G[i][j] += 1;
+      names54[i][j].push(name5);
+      if(sx==="F") names54F[i][j].push(name5); else if(sx==="G") names54G[i][j].push(name5);
+      nMatch54++;
+    }
+  } else {
+    // ===== 6e → 4e direct (pas de 5e) =====
+    const idx4only = idx4; // déjà construit
+    for(const r6 of rows6){
+      const _nom = nom6.value ? r6[nom6.value] : "";
+      const _pre = pre6.value ? r6[pre6.value] : "";
+      const _dn  = dn6.value  ? fmtDate(r6[dn6.value]) : "";
+      const _sx  = mapSexe(sexe6.value ? r6[sexe6.value] : "");
+
+      if(useEtabFilter){
+        const etabVal = etab6.value ? normEtab(r6[etab6.value]) : "";
+        if(!selectedEtabNorm.has(etabVal)) continue;
+      }
+
+      const NP   = normName(_nom,_pre);
+      const NPD  = _dn ? (NP+" "+_dn) : "";
+      const NPS  = (NP+" "+_sx).trim();
+      const Swap = normNameSwapped(_nom,_pre);
+      const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+
+      function pick4(map,key){ if(key && map.has(key)){ const arr=map.get(key); if(arr.length===1){ return arr[0]; } else { nAmbig64++; } } return null; }
+
+      let mate4 = null;
+      if(!mate4 && NPD){ mate4 = pick4(idx4only.byNPD, NPD); if(mate4) viaNPD64++; }
+      if(!mate4 && NPS){ mate4 = pick4(idx4only.byNPS, NPS); if(mate4) viaNPS64++; }
+      if(!mate4 && NP ){ mate4 = pick4(idx4only.byNP,  NP ); if(mate4) viaNP64++;  }
+      if(!mate4 && Swap){mate4 = pick4(idx4only.bySwap,Swap); if(mate4) viaSwap64++; }
+      if(!mate4 && NP1){ mate4 = pick4(idx4only.byNP_firstGiven, NP1); if(mate4) viaNP164++; }
+
+      if(!mate4){ nMiss64++; continue; }
+
+      if(filt){
+        const ok6 = matchesSkillFilter(r6, item6.value, filt);
+        const ok4 = matchesSkillFilter(mate4, item4.value, filt);
+        if(!ok6 && !ok4) continue;
+      }
+
+      const c6 = catFromRow(r6, item6.value);
+      const c4 = catFromRow(mate4, item4.value);
+      if(c6==="NR" || c4==="NR") continue;
+
+      const i = CATS.indexOf(c6), j = CATS.indexOf(c4);
+      const name6 = `${String(_nom||"").trim()} ${String(_pre||"").trim()}`.trim();
+      mat64[i][j] += 1;
+      if(_sx==="F") mat64F[i][j] += 1; else if(_sx==="G") mat64G[i][j] += 1;
+      names64[i][j].push(name6);
+      if(_sx==="F") names64F[i][j].push(name6); else if(_sx==="G") names64G[i][j].push(name6);
+      nMatch64++;
+    }
+  }
+
+  // Diagnostic si aucun 6e ne correspond au filtre établissement
+  if(useEtabFilter && !has6AfterFilter){
+    diag.innerHTML = `<span class="warn">Aucun élève 6e ne correspond au(x) établissement(s) sélectionné(s). Relaxe le filtre.</span>`;
+  }
+
+  return {
+    has5,
+    mat65, mat54, mat65F, mat65G, mat54F, mat54G,
+    mat64, mat64F, mat64G,
+    names65, names54, names65F, names65G, names54F, names54G,
+    names64, names64F, names64G,
+    n6, n5, n4,
+    nMatch65, nMatch54, nMatch64,
+    nAmbig65, nAmbig54, nAmbig64,
+    nMiss65, nMiss54, nMiss64,
+    viaNPD65, viaNPS65, viaNP65, viaSwap65, viaNP165,
+    viaNPD54, viaNPS54, viaNP54, viaSwap54, viaNP154,
+    viaNPD64, viaNPS64, viaNP64, viaSwap64, viaNP164
+  };
+}
+// Sankey helper (2 colonnes) pour 6e→4e direct
+function toSankey2(M64){
+  const nodes = [ ...CATS.map(c=>"6e: "+c), ...CATS.map(c=>"4e: "+c) ];
+  const idx = new Map(nodes.map((n,i)=>[n,i]));
+  const source=[], target=[], value=[], lcolor=[];
+  CATS.forEach((A,ia)=>{
+    CATS.forEach((B,jb)=>{
+      const v = M64[ia][jb];
+      if(v>0){ source.push(idx.get("6e: "+A)); target.push(idx.get("4e: "+B)); value.push(v); lcolor.push(PALETTE[A]+"cc"); }
+    });
+  });
+  const ncolor = [ ...CATS.map(c=>PALETTE[c]), ...CATS.map(c=>PALETTE[c]) ];
+  return {nodes,source,target,value,lcolor,ncolor};
+}
+
+/* ===== Sankey helper (3 colonnes) ===== */
+function toSankey3(M65, M54){
+  const nodes = [ ...CATS.map(c=>"6e: "+c), ...CATS.map(c=>"5e: "+c), ...CATS.map(c=>"4e: "+c) ];
+  const idx = new Map(nodes.map((n,i)=>[n,i]));
+  const source=[], target=[], value=[], lcolor=[];
+  // 6e -> 5e
+  CATS.forEach((A,ia)=>{
+    CATS.forEach((B,jb)=>{
+      const v = M65[ia][jb];
+      if(v>0){ source.push(idx.get("6e: "+A)); target.push(idx.get("5e: "+B)); value.push(v); lcolor.push(PALETTE[A]+"cc"); }
+    });
+  });
+  // 5e -> 4e
+  CATS.forEach((A,ia)=>{
+    CATS.forEach((B,jb)=>{
+      const v = M54[ia][jb];
+      if(v>0){ source.push(idx.get("5e: "+A)); target.push(idx.get("4e: "+B)); value.push(v); lcolor.push(PALETTE[A]+"cc"); }
+    });
+  });
+  const ncolor = [ ...CATS.map(c=>PALETTE[c]), ...CATS.map(c=>PALETTE[c]), ...CATS.map(c=>PALETTE[c]) ];
+  return {nodes,source,target,value,lcolor,ncolor};
+}
+
+/* ===== Rendu ===== */
+function renderAll(){
+  const res = buildMatrices();
+  if(!res){
+    renderFlowTable(null);
+    return;
+  }
+
+  const {
+    has5,
+    mat65, mat54, mat65F, mat65G, mat54F, mat54G,
+    mat64, mat64F, mat64G,
+    n6, n5, n4,
+    nMatch65, nMatch54, nMatch64,
+    nAmbig65, nAmbig54, nAmbig64,
+    nMiss65, nMiss54, nMiss64,
+    viaNPD65, viaNPS65, viaNP65, viaSwap65, viaNP165,
+    viaNPD54, viaNPS54, viaNP54, viaSwap54, viaNP154,
+    viaNPD64, viaNPS64, viaNP64, viaSwap64, viaNP164
+  } = res;
+
+  if(has5){
+    diag.innerHTML = `
+      6e: <b>${n6}</b> · 5e: <b>${n5}</b> · 4e: <b>${n4}</b><br/>
+      Appariements 6e→5e: <b>${nMatch65}</b> (homonymies: <span class="warn">${nAmbig65}</span>, introuvables: ${nMiss65}) —
+      Règles: NP+DATE=${viaNPD65} · NP+SEXE=${viaNPS65} · NP=${viaNP65} · swap=${viaSwap65} · NP+1er=${viaNP165}<br/>
+      Appariements 5e→4e: <b>${nMatch54}</b> (homonymies: <span class="warn">${nAmbig54}</span>, introuvables: ${nMiss54}) —
+      Règles: NP+DATE=${viaNPD54} · NP+SEXE=${viaNPS54} · NP=${viaNP54} · swap=${viaSwap54} · NP+1er=${viaNP154}
+    `;
+
+    const g = toSankey3(mat65, mat54);
+    Plotly.newPlot(plotGlobal, [{
+      type:'sankey',
+      arrangement:'snap',
+      node:{ label:g.nodes, color:g.ncolor, pad:15, thickness:18 },
+      link:{ source:g.source, target:g.target, value:g.value, color:g.lcolor,
+             hovertemplate:"%{source.label} → %{target.label}<br><b>%{value}</b> élève(s)<extra></extra>" }
+    }], {margin:{l:10,r:10,t:30,b:10}, title:"Sankey global 6e → 5e → 4e (3 niveaux)"}, {displaylogo:false});
+
+    const f = toSankey3(mat65F, mat54F);
+    Plotly.newPlot(plotF, [{
+      type:'sankey',
+      node:{ label:f.nodes, color:f.ncolor, pad:15, thickness:18 },
+      link:{ source:f.source, target:f.target, value:f.value, color:f.lcolor,
+             hovertemplate:"%{source.label} → %{target.label}<br><b>%{value}</b> élève(s)<extra></extra>" }
+    }], {margin:{l:10,r:10,t:30,b:10}, title:"Filles — 6e → 5e → 4e"}, {displaylogo:false});
+
+    const g2 = toSankey3(mat65G, mat54G);
+    Plotly.newPlot(plotG, [{
+      type:'sankey',
+      node:{ label:g2.nodes, color:g2.ncolor, pad:15, thickness:18 },
+      link:{ source:g2.source, target:g2.target, value:g2.value, color:g2.lcolor,
+             hovertemplate:"%{source.label} → %{target.label}<br><b>%{value}</b> élève(s)<extra></extra>" }
+    }], {margin:{l:10,r:10,t:30,b:10}, title:"Garçons — 6e → 5e → 4e"}, {displaylogo:false});
+
+  } else {
+    diag.innerHTML = `
+      6e: <b>${n6}</b> · 4e: <b>${n4}</b> (5e absent)<br/>
+      Appariements 6e→4e: <b>${nMatch64}</b> (homonymies: <span class="warn">${nAmbig64}</span>, introuvables: ${nMiss64}) —
+      Règles: NP+DATE=${viaNPD64} · NP+SEXE=${viaNPS64} · NP=${viaNP64} · swap=${viaSwap64} · NP+1er=${viaNP164}
+    `;
+
+    const g = toSankey2(mat64);
+    Plotly.newPlot(plotGlobal, [{
+      type:'sankey',
+      arrangement:'snap',
+      node:{ label:g.nodes, color:g.ncolor, pad:15, thickness:18 },
+      link:{ source:g.source, target:g.target, value:g.value, color:g.lcolor,
+             hovertemplate:"%{source.label} → %{target.label}<br><b>%{value}</b> élève(s)<extra></extra>" }
+    }], {margin:{l:10,r:10,t:30,b:10}, title:"Sankey 6e → 4e (3 niveaux)"}, {displaylogo:false});
+
+    const f = toSankey2(mat64F);
+    Plotly.newPlot(plotF, [{
+      type:'sankey',
+      node:{ label:f.nodes, color:f.ncolor, pad:15, thickness:18 },
+      link:{ source:f.source, target:f.target, value:f.value, color:f.lcolor,
+             hovertemplate:"%{source.label} → %{target.label}<br><b>%{value}</b> élève(s)<extra></extra>" }
+    }], {margin:{l:10,r:10,t:30,b:10}, title:"Filles — 6e → 4e"}, {displaylogo:false});
+
+    const g2 = toSankey2(mat64G);
+    Plotly.newPlot(plotG, [{
+      type:'sankey',
+      node:{ label:g2.nodes, color:g2.ncolor, pad:15, thickness:18 },
+      link:{ source:g2.source, target:g2.target, value:g2.value, color:g2.lcolor,
+             hovertemplate:"%{source.label} → %{target.label}<br><b>%{value}</b> élève(s)<extra></extra>" }
+    }], {margin:{l:10,r:10,t:30,b:10}, title:"Garçons — 6e → 4e"}, {displaylogo:false});
+  }
+  renderFlowTable(res);
+  // === KPI cards ===
+  (function(){
+    const wrap = document.getElementById('kpiWrap');
+    if(!wrap) return;
+    const k = computeKpisFromRes(res);
+    if(!k || !k.total){ wrap.style.display='none'; return; }
+    wrap.style.display='';
+    const pct = (x)=> (k.total ? Math.round(1000*x/k.total)/10 : 0);
+    document.getElementById('kpiProg').textContent = k.prog;
+    document.getElementById('kpiProgPct').textContent = `${pct(k.prog)}% du total`;
+    document.getElementById('kpiStag').textContent = k.stag;
+    document.getElementById('kpiStagPct').textContent = `${pct(k.stag)}% du total`;
+    document.getElementById('kpiDrop').textContent = k.drop;
+    document.getElementById('kpiDropPct').textContent = `${pct(k.drop)}% du total`;
+  })();
+  refreshRoster();
+}
+function buildMatricesForKeys(selKeys){
+  const keep6 = new Set(selKeys||[]);
+  const oldRows6 = rows6;
+  rows6 = oldRows6.filter(r => keep6.has(key6of(r)));
+  const res = buildMatrices();
+  rows6 = oldRows6; // restore
+  return res;
+}
+
+function buildSelectionGraph(selKeys){
+  const keep6 = new Set(selKeys||[]);
+  // Short-circuit if minimal requirements are missing
+  if(!rows6.length || !rows4.length || !nom6.value || !pre6.value || !nom4.value || !pre4.value){
+    return null;
+  }
+
+  // Local snapshots (don’t mutate global state)
+  const S6 = rows6.filter(r => keep6.has(key6of(r)));
+  const S5 = rows5.slice();
+  const S4 = rows4.slice();
+
+  const has5 = !!S5.length;
+  // Build indices for 4e and 5e (reuse existing builders but on local arrays)
+  const saveRows4 = rows4, saveRows5 = rows5;
+  rows4 = S4; const idx4 = buildIndex4();
+  rows5 = S5; const idx5 = has5 ? buildIndex5() : null;
+  rows4 = saveRows4; rows5 = saveRows5;
+
+  const filt = normalizeFilterTerm(filterItem.value||"");
+
+  // Maps edge -> name list (labels from 6e)
+  const names64 = new Map();
+  const names65 = new Map();
+  const names54 = new Map();
+
+  // Helper push
+  function pushName(map, i, j, label){
+    const k = `${i}-${j}`;
+    const arr = map.get(k) || [];
+    arr.push(label);
+    map.set(k, arr);
+  }
+
+  // For establishment filter propagation, reuse the logic from buildMatrices
+  const selectedEtab = Array.from(filterEtab?.selectedOptions || []).map(o=>o.value);
+  const selectedEtabNorm = new Set(selectedEtab.map(v => normEtab(v)));
+  const useEtabFilter = selectedEtabNorm.size > 0 && !!etab6.value;
+
+  if(has5){
+    // 6e -> 5e gathering
+    for(const r6 of S6){
+      if(useEtabFilter){
+        const etabVal = etab6.value ? normEtab(r6[etab6.value]) : "";
+        if(!selectedEtabNorm.has(etabVal)) continue;
+      }
+      const _nom = nom6.value ? r6[nom6.value] : "";
+      const _pre = pre6.value ? r6[pre6.value] : "";
+      const _dn  = dn6.value  ? fmtDate(r6[dn6.value]) : "";
+      const _sx  = mapSexe(sexe6.value ? r6[sexe6.value] : "");
+      const NP   = normName(_nom,_pre);
+      const NPD  = _dn ? (NP+" "+_dn) : "";
+      const NPS  = (NP+" "+_sx).trim();
+      const Swap = normNameSwapped(_nom,_pre);
+      const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+      function pick(map,key){ if(!map||!key||!map.has(key)) return null; const a=map.get(key); if(a.length===1) return a[0]; return a[0]||null; }
+      let mate5 = null;
+      if(!mate5 && NPD) mate5 = pick(idx5.byNPD, NPD);
+      if(!mate5 && NPS) mate5 = pick(idx5.byNPS, NPS);
+      if(!mate5 && NP ) mate5 = pick(idx5.byNP,  NP );
+      if(!mate5 && Swap)mate5 = pick(idx5.bySwap,Swap);
+      if(!mate5 && NP1) mate5 = pick(idx5.byNP_firstGiven, NP1);
+      if(!mate5) continue;
+
+      if(filt){
+        const ok6 = matchesSkillFilter(r6, item6.value, filt);
+        const ok5 = matchesSkillFilter(mate5, item5.value, filt);
+        if(!ok6 && !ok5) continue;
+      }
+      const c6 = catFromRow(r6, item6.value); if(c6==="NR") continue;
+      const c5 = catFromRow(mate5, item5.value); if(c5==="NR") continue;
+      const i = CATS.indexOf(c6), j = CATS.indexOf(c5);
+      pushName(names65, i, j, `${String(_nom||"").trim()} ${String(_pre||"").trim()}`.trim());
+
+      // 5e -> 4e chain
+      const _nom5 = nom5.value ? mate5[nom5.value] : "";
+      const _pre5 = pre5.value ? mate5[pre5.value] : "";
+      const _dn5  = dn5.value  ? fmtDate(mate5[dn5.value]) : "";
+      const _sx5  = mapSexe(sexe5.value ? mate5[sexe5.value] : "");
+      const NP5   = normName(_nom5,_pre5);
+      const NPD5  = _dn5 ? (NP5+" "+_dn5) : "";
+      const NPS5  = (NP5+" "+_sx5).trim();
+      const Swap5 = normNameSwapped(_nom5,_pre5);
+      const NP15  = (normToken(_nom5)+" "+firstGivenName(_pre5)).trim();
+      function pick2(map,key){ if(!map||!key||!map.has(key)) return null; const a=map.get(key); if(a.length===1) return a[0]; return a[0]||null; }
+      let mate4 = null;
+      if(!mate4 && NPD5) mate4 = pick2(idx4.byNPD, NPD5);
+      if(!mate4 && NPS5) mate4 = pick2(idx4.byNPS, NPS5);
+      if(!mate4 && NP5 ) mate4 = pick2(idx4.byNP,  NP5 );
+      if(!mate4 && Swap5)mate4 = pick2(idx4.bySwap,Swap5);
+      if(!mate4 && NP15) mate4 = pick2(idx4.byNP_firstGiven, NP15);
+      if(!mate4) continue;
+      if(filt){
+        const ok5b = matchesSkillFilter(mate5, item5.value, filt);
+        const ok4  = matchesSkillFilter(mate4, item4.value, filt);
+        if(!ok5b && !ok4) continue;
+      }
+      const c5b = c5; // déjà calculé
+      const c4 = catFromRow(mate4, item4.value); if(c4==="NR") continue;
+      const i2 = CATS.indexOf(c5b), j2 = CATS.indexOf(c4);
+      pushName(names54, i2, j2, `${String(_nom||"").trim()} ${String(_pre||"").trim()}`.trim());
+    }
+
+    // Build topology and customdata
+    const g = toSankey3([[0,0,0],[0,0,0],[0,0,0]], [[0,0,0],[0,0,0],[0,0,0]]);
+    // Recreate arrays in the same order as toSankey3
+    const source=[], target=[], value=[], lcolor=[], custom=[];
+    // 6->5
+    CATS.forEach((A,ia)=>{
+      CATS.forEach((B,jb)=>{
+        const key = `${ia}-${jb}`;
+        const arr = names65.get(key) || [];
+        const v = arr.length;
+        if(v>0){
+          source.push(g.nodes.indexOf(`6e: ${A}`));
+          target.push(g.nodes.indexOf(`5e: ${B}`));
+          value.push(v);
+          lcolor.push(PALETTE[A]+"cc");
+          custom.push(summarizeNames(arr));
+        }
+      });
+    });
+    // 5->4
+    CATS.forEach((A,ia)=>{
+      CATS.forEach((B,jb)=>{
+        const key = `${ia}-${jb}`;
+        const arr = names54.get(key) || [];
+        const v = arr.length;
+        if(v>0){
+          source.push(g.nodes.indexOf(`5e: ${A}`));
+          target.push(g.nodes.indexOf(`4e: ${B}`));
+          value.push(v);
+          lcolor.push(PALETTE[A]+"cc");
+          custom.push(summarizeNames(arr));
+        }
+      });
+    });
+    const ncolor = [ ...CATS.map(c=>PALETTE[c]), ...CATS.map(c=>PALETTE[c]), ...CATS.map(c=>PALETTE[c]) ];
+    return { has5:true, nodes:g.nodes, source, target, value, lcolor, ncolor, custom };
+
+  } else {
+    // Direct 6e -> 4e
+    for(const r6 of S6){
+      if(useEtabFilter){
+        const etabVal = etab6.value ? normEtab(r6[etab6.value]) : "";
+        if(!selectedEtabNorm.has(etabVal)) continue;
+      }
+      const _nom = nom6.value ? r6[nom6.value] : "";
+      const _pre = pre6.value ? r6[pre6.value] : "";
+      const _dn  = dn6.value  ? fmtDate(r6[dn6.value]) : "";
+      const _sx  = mapSexe(sexe6.value ? r6[sexe6.value] : "");
+      const NP   = normName(_nom,_pre);
+      const NPD  = _dn ? (NP+" "+_dn) : "";
+      const NPS  = (NP+" "+_sx).trim();
+      const Swap = normNameSwapped(_nom,_pre);
+      const NP1  = (normToken(_nom)+" "+firstGivenName(_pre)).trim();
+      function pick4(map,key){ if(!map||!key||!map.has(key)) return null; const a=map.get(key); if(a.length===1) return a[0]; return a[0]||null; }
+      let mate4 = null;
+      if(!mate4 && NPD) mate4 = pick4(idx4.byNPD, NPD);
+      if(!mate4 && NPS) mate4 = pick4(idx4.byNPS, NPS);
+      if(!mate4 && NP ) mate4 = pick4(idx4.byNP,  NP );
+      if(!mate4 && Swap)mate4 = pick4(idx4.bySwap,Swap);
+      if(!mate4 && NP1) mate4 = pick4(idx4.byNP_firstGiven, NP1);
+      if(!mate4) continue;
+      if(filt){
+        const ok6 = matchesSkillFilter(r6, item6.value, filt);
+        const ok4 = matchesSkillFilter(mate4, item4.value, filt);
+        if(!ok6 && !ok4) continue;
+      }
+      const c6 = catFromRow(r6, item6.value); if(c6==="NR") continue;
+      const c4 = catFromRow(mate4, item4.value); if(c4==="NR") continue;
+      const i = CATS.indexOf(c6), j = CATS.indexOf(c4);
+      pushName(names64, i, j, `${String(_nom||"").trim()} ${String(_pre||"").trim()}`.trim());
+    }
+
+    const g = toSankey2([[0,0,0],[0,0,0],[0,0,0]]);
+    const source=[], target=[], value=[], lcolor=[], custom=[];
+    CATS.forEach((A,ia)=>{
+      CATS.forEach((B,jb)=>{
+        const key = `${ia}-${jb}`;
+        const arr = names64.get(key) || [];
+        const v = arr.length;
+        if(v>0){
+          source.push(g.nodes.indexOf(`6e: ${A}`));
+          target.push(g.nodes.indexOf(`4e: ${B}`));
+          value.push(v);
+          lcolor.push(PALETTE[A]+"cc");
+          custom.push(summarizeNames(arr));
+        }
+      });
+    });
+    const ncolor = [ ...CATS.map(c=>PALETTE[c]), ...CATS.map(c=>PALETTE[c]) ];
+    return { has5:false, nodes:g.nodes, source, target, value, lcolor, ncolor, custom };
+  }
+}
+if(btnRunSel){
+  btnRunSel.addEventListener('click', ()=>{
+    const selKeys = Array.from(lstSel.options||[]).map(o=>o.value);
+    if(!selKeys.length){ if(plotSel) Plotly.purge(plotSel); return; }
+    const G = buildSelectionGraph(selKeys);
+    if(!G) return;
+    const hover = "%{source.label} → %{target.label}<br><b>%{value}</b> élève(s)<br>%{customdata}<extra></extra>";
+    Plotly.newPlot(plotSel, [{
+      type: 'sankey',
+      node: { label: G.nodes, color: G.ncolor, pad: 15, thickness: 18 },
+      link: { source: G.source, target: G.target, value: G.value, color: G.lcolor, customdata: G.custom, hovertemplate: hover }
+    }], { margin:{l:10,r:10,t:30,b:10}, title: G.has5 ? 'Sélection — 6e → 5e → 4e' : 'Sélection — 6e → 4e' }, { displaylogo:false });
+  });
+}
+if(btnExportSel){
+  btnExportSel.addEventListener('click', async ()=>{
+    const title = document.querySelector('#plotSel .gtitle')?.textContent || 'Selection';
+    await Plotly.downloadImage(plotSel, {format:'png', filename:title.replace(/[^\w\-]+/g,'_')});
+  });
+}
+
+btnRun.addEventListener("click", renderAll);
+
+/* Export : 3 images PNG (global, F, G) */
+btnExport.addEventListener("click", async ()=>{
+  const name = (s)=>s.replace(/[^\w\-]+/g,"_");
+  const title = document.querySelector('#plotGlobal .gtitle')?.textContent || '';
+  const is64 = title.includes('6e → 4e');
+  const suffix = is64 ? '6e_4e' : '6e_5e_4e';
+  await Plotly.downloadImage(plotGlobal, {format:'png', filename:name(`Sankey_global_${suffix}`)});
+  await Plotly.downloadImage(plotF,      {format:'png', filename:name(`Sankey_Filles_${suffix}`)});
+  await Plotly.downloadImage(plotG,      {format:'png', filename:name(`Sankey_Garcons_${suffix}`)});
+});
+
+// ===== Reset des filtres =====
+if (btnReset) {
+  btnReset.addEventListener('click', ()=>{
+    if (filterItem) filterItem.value = '';
+    if (qEleve) qEleve.value = '';
+    if (filterEtab) Array.from(filterEtab.options).forEach(o=>o.selected = false);
+    renderAll();
+    refreshRoster();
+  });
+}
+
+// ===== Export PDF (page entière via CSS @media print) =====
+if (btnPdf) {
+  btnPdf.addEventListener('click', ()=>{
+    window.print();
+  });
+}
+
+// ===== Export PDF par établissement sélectionné =====
+if (btnPdfEtab) {
+  btnPdfEtab.addEventListener('click', async ()=>{
+    const selected = Array.from(filterEtab?.selectedOptions || []).map(o=>o.value);
+    if (!selected.length) {
+      alert("Sélectionne au moins un établissement dans le filtre « Étab. de l’an dernier ».");
+      return;
+    }
+    const { jsPDF } = window.jspdf || {};
+    if (!jsPDF) {
+      alert("Bibliothèque PDF non chargée (jsPDF). Vérifie la connexion Internet.");
+      return;
+    }
+    const pdf = new jsPDF({ unit:'mm', format:'a4' });
+    const W = 210, H = 297;
+    const imgW = 180, marginX = (W - imgW) / 2;
+    const imgH = 80;
+
+    // Mémorise la sélection multiple pour restauration
+    const allOpts = Array.from(filterEtab.options || []);
+    const prevSel = allOpts.filter(o=>o.selected).map(o=>o.value);
+
+    function selectOnly(v) {
+      allOpts.forEach(o=>{ o.selected = (o.value === v); });
+    }
+
+    for (let i = 0; i < selected.length; i++) {
+      const etab = selected[i];
+      selectOnly(etab);
+      renderAll();
+      await new Promise(r=>setTimeout(r, 250)); // laisser Plotly finir le rendu
+
+      try{
+        const img1 = await Plotly.toImage(plotGlobal, {format:'png', width:1200, height:600, scale:2});
+        const img2 = await Plotly.toImage(plotF,      {format:'png', width:1200, height:520, scale:2});
+        const img3 = await Plotly.toImage(plotG,      {format:'png', width:1200, height:520, scale:2});
+
+        if (i>0) pdf.addPage();
+        pdf.setFontSize(14);
+        pdf.text(`Sankey — ${etab}`, marginX, 12);
+        let y = 18;
+        pdf.addImage(img1, 'PNG', marginX, y, imgW, imgH); y += imgH + 6;
+        pdf.addImage(img2, 'PNG', marginX, y, imgW, imgH); y += imgH + 6;
+        pdf.addImage(img3, 'PNG', marginX, y, imgW, imgH);
+      }catch(e){
+        console.error(e);
+        alert("Impossible de capturer les graphiques. Regénère les Sankey puis relance l'export PDF par établissement.");
+        break;
+      }
+    }
+
+    // Restaure la sélection initiale
+    allOpts.forEach(o=>{ o.selected = prevSel.includes(o.value); });
+    renderAll();
+
+    pdf.save('EvalNat_Sankey_par_etablissement.pdf');
+  });
+}
+// ===== Afficher/Masquer la comparaison inter‑années =====
+(function(){
+  const btn = document.getElementById('btnToggleCompare');
+  const card = document.getElementById('cardCompare');
+  if(!btn || !card) return;
+  function show(){
+    card.style.display = '';
+    btn.setAttribute('aria-expanded','true');
+    // (Re)rendre si des snapshots existent
+    try { renderCompare(); } catch(_) {}
+  }
+  function hide(){
+    card.style.display = 'none';
+    btn.setAttribute('aria-expanded','false');
+  }
+  btn.addEventListener('click', ()=>{
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    if(open) hide(); else show();
+  });
+})();
+</script>
+<script>
+(function(){
+  const key = 'longinat-theme';
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+  } else {
+    // default to light
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+  const btn = document.getElementById('toggleTheme');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = (cur === 'light') ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(key, next);
+    });
+  }
+})();
+</script>
+</body>
+</html>
+
