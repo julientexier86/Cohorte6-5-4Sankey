@@ -81,6 +81,14 @@
   .btn.btn-small{ padding:7px 12px; font-size:0.8rem; border-radius:8px; }
 
   .hint{ color:var(--muted); font-size:0.95rem; }
+  .status{ min-height:1.4em; margin-top:10px; font-size:.9rem; color:var(--muted); }
+  .status.error{ color:#b91c1c; }
+  .status.success{ color:#047857; }
+  .btn:disabled{ cursor:wait; opacity:.65; transform:none; }
+  .notice{ padding:12px 14px; border-radius:10px; background:var(--panel); border-left:4px solid var(--accent); line-height:1.45; }
+  .quality-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  .quality-item{ padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+  .quality-item strong{ display:block; font-size:1.25rem; margin-top:4px; }
   .plot-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:6px; box-shadow:var(--shadow); }
   .muted{ color:#97a6b1; }
   .sep{ height:1px; background:var(--line); margin:12px 0; }
@@ -286,17 +294,17 @@
     <div class="grid g3">
       <div>
         <label>Fichier 6e</label>
-        <input id="f6" type="file" accept=".xlsx,.xls,.csv" />
+        <input id="f6" type="file" accept=".xlsx,.xls,.csv" aria-describedby="h6" />
         <div class="hint" id="h6"></div>
       </div>
       <div>
         <label>Fichier 5e</label>
-        <input id="f5" type="file" accept=".xlsx,.xls,.csv" />
+        <input id="f5" type="file" accept=".xlsx,.xls,.csv" aria-describedby="h5" />
         <div class="hint" id="h5"></div>
       </div>
       <div>
         <label>Fichier 4e</label>
-        <input id="f4" type="file" accept=".xlsx,.xls,.csv" />
+        <input id="f4" type="file" accept=".xlsx,.xls,.csv" aria-describedby="h4" />
         <div class="hint" id="h4"></div>
       </div>
     </div>
@@ -374,11 +382,47 @@
         <button class="btn ghost" id="btnReset">Réinitialiser filtres ♻️</button>
         <button class="btn ghost" id="btnExport">Exporter PNG 📤</button>
         <button class="btn ghost" id="btnCsv">Exporter CSV 📄</button>
+        <button class="btn ghost" id="btnWorkbook">Export Excel complet 📗</button>
+        <button class="btn ghost" id="btnSaveConfig">Mémoriser la configuration 💾</button>
+        <button class="btn ghost" id="btnLoadConfig">Restaurer la configuration ↩️</button>
         <button class="btn ghost" id="btnSnapA" data-role="snapshot">📌 Année A</button>
         <button class="btn ghost" id="btnSnapB" data-role="snapshot">📌 Année B</button>
       </div>
     </div>
 
+  </div>
+
+  <div class="card" id="qualityCard" style="display:none">
+    <h2>🛡️ Contrôle qualité de l’appariement</h2>
+    <p class="hint">Vérifie ce bilan avant de diffuser les résultats. Les homonymies non résolues et les doublons sont exclus des flux pour éviter une conclusion erronée.</p>
+    <div id="qualityGrid" class="quality-grid"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost" id="btnAuditCsv">Exporter le journal de contrôle CSV 📄</button>
+    </div>
+    <div class="sep"></div>
+    <h3>Correction manuelle d’un appariement</h3>
+    <p class="hint">À utiliser uniquement après vérification : la correction remplace la recherche automatique pour la transition choisie.</p>
+    <div class="grid g3">
+      <div><label>Transition</label><select id="overridePhase"><option value="64">6e → 4e</option><option value="65">6e → 5e</option><option value="54">5e → 4e</option></select></div>
+      <div><label>Élève source</label><select id="overrideSource"></select></div>
+      <div><label>Élève cible</label><select id="overrideTarget"></select></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn ghost" id="btnSaveOverride">Enregistrer la correction</button><button class="btn ghost" id="btnClearOverrides">Effacer les corrections manuelles</button></div>
+  </div>
+
+  <div class="card">
+    <h2>⚙️ Règles de catégorisation</h2>
+    <p class="hint">Les libellés « À besoins », « Fragile » et « Satisfaisant » sont prioritaires. Ces seuils ne s’appliquent qu’aux colonnes numériques, lorsque aucun libellé n’est trouvé.</p>
+    <div class="grid g3">
+      <div><label>« À besoins » si score inférieur à</label><input id="thresholdNeed" type="text" inputmode="decimal" value="25" /></div>
+      <div><label>« Fragile » si score inférieur à</label><input id="thresholdFragile" type="text" inputmode="decimal" value="50" /></div>
+      <div class="control-actions" style="align-self:end"><button class="btn ghost" id="btnSaveThresholds">Appliquer les seuils</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ℹ️ Méthode et confidentialité</h2>
+    <div class="notice">Les fichiers sont lus uniquement dans votre navigateur : aucune donnée élève n’est transmise. L’appariement privilégie <b>nom + date de naissance</b>, puis <b>nom + sexe</b>, nom complet, inversion nom/prénom et premier prénom. Une ambiguïté restante est exclue et signalée.</div>
   </div>
 
   <div class="card">
@@ -400,7 +444,7 @@
         <div class="sub" id="kpiDropPct">–</div>
       </div>
     </div>
-    <div id="diag" class="hint"></div>
+    <div id="diag" class="hint" role="status" aria-live="polite"></div>
     <div class="plot-wrap"><div id="plotGlobal" style="height:540px;"></div></div>
     <div class="sep"></div>
     <div class="grid g2">
@@ -454,6 +498,21 @@
       <div id="flowTableEmpty" class="hint" style="display:none; margin-top:10px">Aucune transition ne correspond aux filtres.</div>
       <div id="flowTableDetails" class="table-details" style="display:none"></div>
     </div>
+  </div>
+
+  <div class="card" id="dashboardCard" style="display:none">
+    <h2>📌 Tableau de bord pédagogique</h2>
+    <div id="dashboardAlerts" class="notice"></div>
+    <div class="kpis" style="margin-top:14px">
+      <div class="kpi"><h4>Progression nette</h4><div class="big" id="kpiNet">–</div><div class="sub" id="kpiNetSub">–</div></div>
+      <div class="kpi"><h4>Maintien « À besoins »</h4><div class="big" id="kpiNeedStay">–</div><div class="sub" id="kpiNeedStaySub">–</div></div>
+      <div class="kpi"><h4>Sorties de fragilité</h4><div class="big" id="kpiFragOut">–</div><div class="sub" id="kpiFragOutSub">–</div></div>
+    </div>
+    <div class="grid g2">
+      <div class="plot-wrap"><div id="plotDistribution" style="height:360px"></div></div>
+      <div class="plot-wrap"><div id="plotHeatmap" style="height:360px"></div></div>
+    </div>
+    <div id="dashboardNarrative" class="notice" style="margin-top:14px"></div>
   </div>
 
   <div class="card" id="cardCompareToggle">
@@ -860,6 +919,8 @@ function propagateMapping(){
 
 /* ===== Auto-détection catégories si ITEM/NIVEAU absents ===== */
 const HEADER_HINTS = ["orthographe","fluence","compr","lexique","automati","résolution","nombres","géom","grandeurs","mesures","item","compétence","competence","lecture","langue"];
+const LS_THRESHOLDS = 'evalnat_category_thresholds';
+let CATEGORY_THRESHOLDS = { needs:25, fragile:50 };
 function isNumeric(v){ return v!=null && v!=="" && !isNaN(Number(String(v).replace(",", "."))); }
 function headerLooksSkill(h){
   const s = String(h||"").toLowerCase();
@@ -887,8 +948,8 @@ function autoFromNumericRow(r){
   }
   if(!vals.length) return "NR";
   const m = vals.reduce((a,b)=>a+b,0) / vals.length;
-  if(m < 25) return "A besoins";
-  if(m < 50) return "Fragile";
+  if(m < CATEGORY_THRESHOLDS.needs) return "A besoins";
+  if(m < CATEGORY_THRESHOLDS.fragile) return "Fragile";
   return "Satisfaisant";
 }
 
@@ -904,6 +965,10 @@ const nom4=el("nom4"), pre4=el("pre4"), dn4=el("dn4"), sexe4=el("sexe4"), item4=
 const filterItem=el("filterItem"), qEleve=el("qEleve"), filterEtab=el("filterEtab");
 const btnRun=el("btnRun"), btnExport=el("btnExport"), btnReset=el("btnReset"), btnPdf=el("btnPdf"), btnPdfEtab=el("btnPdfEtab");
 const btnCsv=el("btnCsv"), btnSnapA=el("btnSnapA"), btnSnapB=el("btnSnapB");
+const btnWorkbook=el('btnWorkbook'), btnSaveConfig=el('btnSaveConfig'), btnLoadConfig=el('btnLoadConfig');
+const thresholdNeed=el('thresholdNeed'), thresholdFragile=el('thresholdFragile'), btnSaveThresholds=el('btnSaveThresholds');
+const qualityCard=el('qualityCard'), qualityGrid=el('qualityGrid'), btnAuditCsv=el('btnAuditCsv');
+const overridePhase=el('overridePhase'), overrideSource=el('overrideSource'), overrideTarget=el('overrideTarget'), btnSaveOverride=el('btnSaveOverride'), btnClearOverrides=el('btnClearOverrides');
 const chipsItems=el("chipsItems"), btnFavItemAdd=el("btnFavItemAdd"), favItems=el("favItems");
 const btnFavEtabAdd=el("btnFavEtabAdd"), favEtab=el("favEtab");
 const plotA=el("plotA"), plotB=el("plotB"), metaA=el("metaA"), metaB=el("metaB"), deltaAB=el("deltaAB");
@@ -924,6 +989,103 @@ const qRoster=el("qRoster"),
       btnRunSel=el("btnRunSel"),
       plotSel=el("plotSel"),
       btnExportSel=el("btnExportSel");
+const FILE_SIZE_LIMIT = 35 * 1024 * 1024;
+const LS_CONFIG = 'evalnat_saved_configuration';
+const LS_OVERRIDES = 'evalnat_matching_overrides';
+let LAST_RES = null;
+let MATCH_OVERRIDES = {};
+function setStatus(node, message, kind=''){
+  if(!node) return;
+  node.textContent = message;
+  node.className = `hint status ${kind}`.trim();
+}
+function setBusy(button, busy, label){
+  if(!button) return;
+  if(busy){
+    button.dataset.label = button.textContent;
+    button.disabled = true;
+    button.textContent = label || 'Traitement en cours…';
+  } else {
+    button.disabled = false;
+    button.textContent = button.dataset.label || button.textContent;
+  }
+}
+function replaceOptions(select, values, selectedValues=[]){
+  if(!select) return;
+  const selected = new Set(selectedValues);
+  const fragment = document.createDocumentFragment();
+  values.forEach(value=>{
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    option.selected = selected.has(value);
+    fragment.appendChild(option);
+  });
+  select.replaceChildren(fragment);
+}
+function mappingState(){
+  const ids = ['nom6','pre6','dn6','sexe6','etab6','item6','nom5','pre5','dn5','sexe5','item5','nom4','pre4','dn4','sexe4','item4'];
+  return Object.fromEntries(ids.map(id=>[id, el(id)?.value || '']));
+}
+function saveConfiguration(){
+  const state = { mappings:mappingState(), filterItem:filterItem?.value||'', thresholds:CATEGORY_THRESHOLDS };
+  localStorage.setItem(LS_CONFIG, JSON.stringify(state));
+  setStatus(diag, 'Configuration mémorisée sur cet appareil.', 'success');
+}
+function loadConfiguration(){
+  let state;
+  try { state = JSON.parse(localStorage.getItem(LS_CONFIG)||'null'); } catch(_) { state=null; }
+  if(!state){ setStatus(diag, 'Aucune configuration mémorisée sur cet appareil.', 'error'); return; }
+  Object.entries(state.mappings||{}).forEach(([id,value])=>{ const select=el(id); if(select && [...select.options].some(o=>o.value===value)) select.value=value; });
+  if(filterItem) filterItem.value=state.filterItem||'';
+  if(state.thresholds) applyThresholds(state.thresholds, false);
+  propagateMapping(); alignSkillColumns(); renderChips(); refreshRoster();
+  setStatus(diag, 'Configuration restaurée. Vérifie les mappings puis génère les résultats.', 'success');
+}
+function applyThresholds(values, announce=true){
+  const needs = Number(String(values.needs).replace(',','.'));
+  const fragile = Number(String(values.fragile).replace(',','.'));
+  if(!Number.isFinite(needs) || !Number.isFinite(fragile) || needs < 0 || fragile <= needs){
+    if(announce) setStatus(diag, 'Seuils invalides : utilise deux valeurs positives avec « À besoins » < « Fragile ».', 'error');
+    return false;
+  }
+  CATEGORY_THRESHOLDS={needs, fragile};
+  if(thresholdNeed) thresholdNeed.value=needs;
+  if(thresholdFragile) thresholdFragile.value=fragile;
+  localStorage.setItem(LS_THRESHOLDS, JSON.stringify(CATEGORY_THRESHOLDS));
+  if(announce) setStatus(diag, 'Seuils appliqués. Génère à nouveau les résultats pour les recalculer.', 'success');
+  return true;
+}
+function nameForRow(row, nom, pre, dn){
+  const name=`${String(row?.[nom?.value]||'').trim()} ${String(row?.[pre?.value]||'').trim()}`.trim() || 'Sans nom';
+  const birth=dn?.value ? fmtDate(row?.[dn.value]) : '';
+  return birth ? `${name} — ${birth}` : name;
+}
+function overrideTargetFor(phase, sourceKey, rows, keyFn){
+  const targetKey=MATCH_OVERRIDES?.[phase]?.[sourceKey];
+  return targetKey ? rows.find(row=>keyFn(row)===targetKey) || null : null;
+}
+function populateOverrideSelectors(){
+  if(!overridePhase || !overrideSource || !overrideTarget) return;
+  const phase=overridePhase.value;
+  const sourceRows=phase==='54'?rows5:rows6;
+  const targetRows=phase==='65'?rows5:rows4;
+  const sourceKey=phase==='54'?key5of:key6of;
+  const targetKey=phase==='65'?key5of:key4of;
+  const sourceName=phase==='54'?(r=>nameForRow(r,nom5,pre5,dn5)):(r=>nameForRow(r,nom6,pre6,dn6));
+  const targetName=phase==='65'?(r=>nameForRow(r,nom5,pre5,dn5)):(r=>nameForRow(r,nom4,pre4,dn4));
+  const sourceOptions=sourceRows.map(row=>({value:sourceKey(row),label:sourceName(row)})).filter((x,i,a)=>x.value&&a.findIndex(y=>y.value===x.value)===i);
+  const targetOptions=targetRows.map(row=>({value:targetKey(row),label:targetName(row)})).filter((x,i,a)=>x.value&&a.findIndex(y=>y.value===x.value)===i);
+  function fill(select, options){ const f=document.createDocumentFragment(); options.forEach(({value,label})=>{ const o=document.createElement('option');o.value=value;o.textContent=label;f.appendChild(o);}); select.replaceChildren(f); }
+  fill(overrideSource,sourceOptions); fill(overrideTarget,targetOptions);
+}
+function saveOverride(){
+  const phase=overridePhase?.value, source=overrideSource?.value, target=overrideTarget?.value;
+  if(!phase||!source||!target){ setStatus(diag,'Charge les cohortes et sélectionne les deux élèves avant d’enregistrer.', 'error'); return; }
+  MATCH_OVERRIDES[phase] ||= {}; MATCH_OVERRIDES[phase][source]=target;
+  localStorage.setItem(LS_OVERRIDES,JSON.stringify(MATCH_OVERRIDES));
+  setStatus(diag,'Correction manuelle enregistrée. Génère à nouveau les résultats.', 'success');
+}
 function key6of(r){
   const _nom = nom6.value ? r[nom6.value] : "";
   const _pre = pre6.value ? r[pre6.value] : "";
@@ -992,10 +1154,14 @@ function refreshRoster(){
   if(!lstAll || !lstSel) return;
   const items = buildRoster();
   const selectedKeys = new Set(Array.from(lstSel.options).map(o=>o.value));
-  lstAll.innerHTML = items
-    .filter(it => !selectedKeys.has(it.key))
-    .map(it => `<option value="${it.key}">${it.label}</option>`) 
-    .join("");
+  const fragment = document.createDocumentFragment();
+  items.filter(it => !selectedKeys.has(it.key)).forEach(it=>{
+    const option = document.createElement('option');
+    option.value = it.key;
+    option.textContent = it.label;
+    fragment.appendChild(option);
+  });
+  lstAll.replaceChildren(fragment);
 }
 function addSelected(){
   const opts = Array.from(lstAll.selectedOptions||[]);
@@ -1227,7 +1393,18 @@ async function onLoad(which){
   const inp = which==="6" ? f6 : (which==="4" ? f4 : f5);
   const lab = which==="6" ? h6 : (which==="4" ? h4 : h5);
   const file = inp.files?.[0]; if(!file) return;
-  const rows = await readSheet(file);
+  const supported = /\.(xlsx|xls|csv)$/i.test(file.name);
+  if(!supported){ setStatus(lab, 'Format non pris en charge. Choisis un fichier .xlsx, .xls ou .csv.', 'error'); return; }
+  if(file.size > FILE_SIZE_LIMIT){ setStatus(lab, 'Fichier trop volumineux (limite : 35 Mo).', 'error'); return; }
+  setStatus(lab, `Lecture de ${file.name}…`);
+  let rows;
+  try{
+    rows = await readSheet(file);
+  }catch(error){
+    console.error(error);
+    setStatus(lab, `Impossible de lire ${file.name}. Vérifie le format et la première feuille.`, 'error');
+    return;
+  }
   if(which==="6"){ rows6 = rows; cols6 = Object.keys(rows6[0]||{}); }
   else if(which==="5"){ rows5 = rows; cols5 = Object.keys(rows5[0]||{}); }
   else { rows4 = rows; cols4 = Object.keys(rows4[0]||{}); }
@@ -1238,7 +1415,7 @@ async function onLoad(which){
   else skillMap4 = skillMap;
 
   if(!cols || !cols.length){
-    lab.textContent = `${file.name} — ${rows.length} lignes (Impossible d'inférer les entêtes : vérifie que la première feuille contient une ligne d'en-têtes)`;
+    setStatus(lab, `${file.name} — ${rows.length} lignes. Impossible d'inférer les entêtes : vérifie que la première feuille contient une ligne d'en-têtes.`, 'error');
     return;
   }
 
@@ -1282,15 +1459,16 @@ async function onLoad(which){
     }
     const arr = Array.from(opts).sort((a,b)=>a.localeCompare(b));
     const prev = new Set(Array.from(filterEtab.selectedOptions||[]).map(o=>o.value));
-    filterEtab.innerHTML = arr.map(v=>`<option ${prev.has(v)?'selected':''}>${v}</option>`).join("");
+    replaceOptions(filterEtab, arr, Array.from(prev));
   }
 
-  lab.textContent = `${file.name} — ${rows.length} lignes`;
+  setStatus(lab, `${file.name} — ${rows.length} lignes importées`, 'success');
 
   // Auto-préselection: copie des mappings 6e si les en-têtes sont identiques
   propagateMapping();
   renderChips(); renderFavChips();
   refreshRoster();
+  populateOverrideSelectors();
 }
 f6.addEventListener("change", ()=>onLoad("6"));
 f5.addEventListener("change", ()=>onLoad("5"));
@@ -1307,7 +1485,7 @@ el("etab6").addEventListener("change", ()=>{
   }
   const arr = Array.from(opts).sort((a,b)=>a.localeCompare(b));
   const prev = new Set(Array.from(filterEtab.selectedOptions||[]).map(o=>o.value));
-  filterEtab.innerHTML = arr.map(v=>`<option ${prev.has(v)?'selected':''}>${v}</option>`).join("");
+  replaceOptions(filterEtab, arr, Array.from(prev));
 });
 
 // Ajoute la propagation après modification manuelle d'un mapping 6e
@@ -1345,6 +1523,53 @@ if(btnCsv){
     }
   });
 }
+function csvEscape(value){ return `"${String(value ?? '').replace(/"/g,'""')}"`; }
+function auditRows(res){
+  if(!res) return [];
+  const steps = res.has5
+    ? [['6e → 5e',res.n6,res.nMatch65,res.nMiss65,res.nAmbig65,res.nDuplicate65],['5e → 4e',res.n5,res.nMatch54,res.nMiss54,res.nAmbig54,res.nDuplicate54]]
+    : [['6e → 4e',res.n6,res.nMatch64,res.nMiss64,res.nAmbig64,res.nDuplicate64]];
+  return steps.map(([phase,source,matched,missing,ambiguous,duplicates])=>({phase,source,matched,missing,ambiguous,duplicates,rate:source?matched/source:0}));
+}
+function renderQuality(res){
+  if(!qualityCard || !qualityGrid) return;
+  if(!res){ qualityCard.style.display='none'; return; }
+  const rows = auditRows(res);
+  qualityCard.style.display='';
+  qualityGrid.replaceChildren(...rows.map(row=>{
+    const card=document.createElement('div'); card.className='quality-item';
+    card.innerHTML=`<span>${escapeHtml(row.phase)}</span><strong>${Math.round(row.rate*100)} %</strong><span class="muted">${row.matched}/${row.source} élèves appariés</span><div class="muted" style="margin-top:8px">Introuvables : ${row.missing} · Ambigus : ${row.ambiguous} · Doublons : ${row.duplicates}</div>`;
+    return card;
+  }));
+}
+function exportWorkbook(){
+  if(!LAST_RES){ alert('Génère les Sankey avant l’export Excel.'); return; }
+  const wb=XLSX.utils.book_new();
+  const res=LAST_RES;
+  const summary=[['Rapport EvalNat — suivi de cohorte'],['Généré le',new Date().toLocaleString('fr-FR')],['Filtre compétence',filterItem?.value||'Tous'],['Seuils numériques',`À besoins < ${CATEGORY_THRESHOLDS.needs} ; Fragile < ${CATEGORY_THRESHOLDS.fragile}`],[],['Phase','Cohorte source','Appariés','Taux','Introuvables','Ambigus','Doublons exclus']];
+  auditRows(res).forEach(r=>summary.push([r.phase,r.source,r.matched,r.rate,r.missing,r.ambiguous,r.duplicates]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summary),'Synthèse');
+  ['global','filles','garcons'].forEach(mode=>{
+    const rows=(FLOW_DATA[mode]?.rows||[]).map(r=>({Phase:r.step,Origine:r.source,Destination:r.target,Catégorie:r.displayKind,Élèves:r.value,'Part (%)':r.pctText}));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),mode[0].toUpperCase()+mode.slice(1));
+  });
+  const audit=auditRows(res).map(r=>({Phase:r.phase,'Élèves source':r.source,Appariés:r.matched,'Taux appariement':r.rate,Introuvables:r.missing,Ambigus:r.ambiguous,'Doublons exclus':r.duplicates}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(audit),'Contrôle qualité');
+  XLSX.writeFile(wb,'EvalNat_Suivi_cohorte.xlsx');
+}
+if(btnWorkbook) btnWorkbook.addEventListener('click', exportWorkbook);
+if(btnAuditCsv) btnAuditCsv.addEventListener('click', ()=>{
+  if(!LAST_RES){ alert('Génère les Sankey avant l’export.'); return; }
+  const header=['Phase','Élèves source','Appariés','Taux appariement','Introuvables','Ambigus','Doublons exclus'];
+  const lines=auditRows(LAST_RES).map(r=>[r.phase,r.source,r.matched,`${Math.round(r.rate*1000)/10}%`,r.missing,r.ambiguous,r.duplicates].map(csvEscape).join(';'));
+  const blob=new Blob([[header.map(csvEscape).join(';'),...lines].join('\n')],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='controle_qualite_appariement.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
+if(btnSaveConfig) btnSaveConfig.addEventListener('click',saveConfiguration);
+if(btnLoadConfig) btnLoadConfig.addEventListener('click',loadConfiguration);
+if(btnSaveThresholds) btnSaveThresholds.addEventListener('click',()=>applyThresholds({needs:thresholdNeed?.value,fragile:thresholdFragile?.value}));
+if(overridePhase) overridePhase.addEventListener('change',populateOverrideSelectors);
+if(btnSaveOverride) btnSaveOverride.addEventListener('click',saveOverride);
+if(btnClearOverrides) btnClearOverrides.addEventListener('click',()=>{ MATCH_OVERRIDES={}; localStorage.removeItem(LS_OVERRIDES); setStatus(diag,'Corrections manuelles effacées.', 'success'); });
 
 let SNAP_A = null, SNAP_B = null;
 function makeEmptyFlowData(){
@@ -1447,6 +1672,33 @@ function computeKpisFromRes(res){
   } else {
     return agg(res.mat64);
   }
+}
+
+function renderDashboard(res){
+  const card=el('dashboardCard'), distribution=el('plotDistribution'), heatmap=el('plotHeatmap');
+  if(!card || !res){ if(card) card.style.display='none'; return; }
+  card.style.display='';
+  const steps=matricesForMode(res,'global');
+  const latest=steps[steps.length-1];
+  const first=steps[0];
+  const total=sumMatrix(latest.matrix);
+  const k=computeKpisFromRes(res), pct=n=>total?Math.round(n/total*1000)/10:0;
+  el('kpiNet').textContent=`${k.prog-k.drop>=0?'+':''}${k.prog-k.drop}`;
+  el('kpiNetSub').textContent='progressions moins décrochages';
+  el('kpiNeedStay').textContent=`${pct(latest.matrix[0][0])} %`;
+  el('kpiNeedStaySub').textContent='des transitions de la dernière phase';
+  const fragileOut=(latest.matrix[1][2]||0)+(latest.matrix[1][0]||0);
+  el('kpiFragOut').textContent=`${pct(fragileOut)} %`;
+  el('kpiFragOutSub').textContent='progression ou décrochage depuis « Fragile »';
+  const audit=auditRows(res), weakest=Math.min(...audit.map(x=>x.rate));
+  el('dashboardAlerts').textContent=weakest<.7 ? `Attention : taux d’appariement minimal de ${Math.round(weakest*100)} %. Interpréter les écarts avec prudence.` : `Qualité d’appariement satisfaisante : au moins ${Math.round(weakest*100)} % des élèves source sont reliés.`;
+  const stageLabels=steps.map(x=>x.step);
+  const categoryTotals=matrix=>CATS.map((_,j)=>matrix.reduce((a,row)=>a+(row[j]||0),0));
+  const data=CATS.map((cat,j)=>({type:'bar',name:cat,x:stageLabels,y:steps.map(s=>{const t=sumMatrix(s.matrix);return t?Math.round(categoryTotals(s.matrix)[j]/t*1000)/10:0;}),hovertemplate:`${cat}<br>%{x}: %{y}%<extra></extra>`}));
+  Plotly.newPlot(distribution,data,{barmode:'stack',barnorm:'percent',title:'Répartition à destination (100 %)',yaxis:{title:'Part (%)',range:[0,100]},margin:{l:48,r:12,t:44,b:38}}, {displaylogo:false,responsive:true});
+  Plotly.newPlot(heatmap,[{type:'heatmap',z:latest.matrix,x:CATS,y:CATS,text:latest.matrix,texttemplate:'%{text}',colorscale:'Blues',hovertemplate:'%{y} → %{x}<br><b>%{z}</b> élève(s)<extra></extra>'}],{title:`Matrice de transition — ${latest.step}`,xaxis:{title:'Destination'},yaxis:{title:'Origine',autorange:'reversed'},margin:{l:105,r:12,t:44,b:50}}, {displaylogo:false,responsive:true});
+  const net=k.prog-k.drop;
+  el('dashboardNarrative').textContent=`Lecture rapide : ${net>=0?'dynamique globalement favorable':'décrochages à surveiller'} (${net>=0?'+':''}${net} transitions nettes). La priorité est le flux « À besoins → À besoins » (${latest.matrix[0][0]||0} élèves) et les élèves « Fragile → À besoins » (${latest.matrix[1][0]||0} élèves).`;
 }
 
 function renderHeatAndBar(A,B){
@@ -2196,8 +2448,9 @@ function buildMatrices(){
       if(m.length === 1) return m[0];
       if(m.length > 1) a = m;
     }
-    // 4) Sinon, retourne le premier (comportement conservateur)
-    return a[0] || null;
+    // 4) Une homonymie restante est volontairement exclue : choisir la première
+    // ligne ferait apparaître une transition potentiellement erronée.
+    return null;
   }
 
   // Matrices 3 niveaux
@@ -2224,11 +2477,16 @@ function buildMatrices(){
 
   // On mémorise des clés stables (strings) plutôt que des références d'objets
   const allowed5From6 = new Set();
+  // Un même enregistrement cible ne doit alimenter qu'un seul élève source.
+  // Cela évite de surcompter les flux en présence de doublons dans un export.
+  const used5Targets = new Set();
+  const used4Targets = new Set();
 
   let n6=rows6.length, n5=rows5.length, n4=rows4.length;
   let nMatch65=0, nMatch54=0, nMatch64=0;
   let nAmbig65=0, nAmbig54=0, nAmbig64=0;
   let nMiss65=0, nMiss54=0, nMiss64=0;
+  let nDuplicate65=0, nDuplicate54=0, nDuplicate64=0;
 
   let viaNPD65=0, viaNPS65=0, viaNP65=0, viaSwap65=0, viaNP165=0;
   let viaNPD54=0, viaNPS54=0, viaNP54=0, viaSwap54=0, viaNP154=0;
@@ -2267,7 +2525,7 @@ function buildMatrices(){
         return null;
       }
 
-      let mate5 = null;
+      let mate5 = overrideTargetFor('65', key6of(r6), rows5, key5of);
       if(!mate5 && NPD){ mate5 = pick(idx5.byNPD, NPD); if(mate5) viaNPD65++; }
       if(!mate5 && NPS){ mate5 = pick(idx5.byNPS, NPS); if(mate5) viaNPS65++; }
       if(!mate5 && NP ){ mate5 = pick(idx5.byNP,  NP ); if(mate5) viaNP65++;  }
@@ -2275,6 +2533,8 @@ function buildMatrices(){
       if(!mate5 && NP1){ mate5 = pick(idx5.byNP_firstGiven, NP1); if(mate5) viaNP165++; }
 
       if(!mate5){ nMiss65++; continue; }
+      const mate5Key = key5of(mate5);
+      if(used5Targets.has(mate5Key)){ nDuplicate65++; continue; }
 
       // Marque d'abord ce 5e comme issu de la cohorte 6e filtrée (clé stable),
       // AVANT tout filtrage item/catégorie pour ne pas perdre la propagation du filtre établissement.
@@ -2297,6 +2557,7 @@ function buildMatrices(){
       if(_sx==="F") mat65F[i][j] += 1; else if(_sx==="G") mat65G[i][j] += 1;
       names65[i][j].push(name6);
       if(_sx==="F") names65F[i][j].push(name6); else if(_sx==="G") names65G[i][j].push(name6);
+      used5Targets.add(mate5Key);
       nMatch65++;
     }
 
@@ -2331,7 +2592,7 @@ function buildMatrices(){
         return null;
       }
 
-      let mate4 = null;
+      let mate4 = overrideTargetFor('54', key5of(r5), rows4, key4of);
       if(!mate4 && NPD){ mate4 = pick2(idx4.byNPD, NPD); if(mate4) viaNPD54++; }
       if(!mate4 && NPS){ mate4 = pick2(idx4.byNPS, NPS); if(mate4) viaNPS54++; }
       if(!mate4 && NP ){ mate4 = pick2(idx4.byNP,  NP ); if(mate4) viaNP54++;  }
@@ -2339,6 +2600,8 @@ function buildMatrices(){
       if(!mate4 && NP1){ mate4 = pick2(idx4.byNP_firstGiven, NP1); if(mate4) viaNP154++; }
 
       if(!mate4){ nMiss54++; continue; }
+      const mate4Key = key4of(mate4);
+      if(used4Targets.has(mate4Key)){ nDuplicate54++; continue; }
 
       if(filt){
         const ok5 = matchesSkillFilter(r5, item5.value, filt);
@@ -2357,6 +2620,7 @@ function buildMatrices(){
       if(sx==="F") mat54F[i][j] += 1; else if(sx==="G") mat54G[i][j] += 1;
       names54[i][j].push(name5);
       if(sx==="F") names54F[i][j].push(name5); else if(sx==="G") names54G[i][j].push(name5);
+      used4Targets.add(mate4Key);
       nMatch54++;
     }
   } else {
@@ -2381,7 +2645,7 @@ function buildMatrices(){
 
       function pick4(map,key){ if(key && map.has(key)){ const arr=map.get(key); if(arr.length===1){ return arr[0]; } else { nAmbig64++; } } return null; }
 
-      let mate4 = null;
+      let mate4 = overrideTargetFor('64', key6of(r6), rows4, key4of);
       if(!mate4 && NPD){ mate4 = pick4(idx4only.byNPD, NPD); if(mate4) viaNPD64++; }
       if(!mate4 && NPS){ mate4 = pick4(idx4only.byNPS, NPS); if(mate4) viaNPS64++; }
       if(!mate4 && NP ){ mate4 = pick4(idx4only.byNP,  NP ); if(mate4) viaNP64++;  }
@@ -2389,6 +2653,8 @@ function buildMatrices(){
       if(!mate4 && NP1){ mate4 = pick4(idx4only.byNP_firstGiven, NP1); if(mate4) viaNP164++; }
 
       if(!mate4){ nMiss64++; continue; }
+      const mate4Key = key4of(mate4);
+      if(used4Targets.has(mate4Key)){ nDuplicate64++; continue; }
 
       if(filt){
         const ok6 = matchesSkillFilter(r6, item6.value, filt);
@@ -2406,6 +2672,7 @@ function buildMatrices(){
       if(_sx==="F") mat64F[i][j] += 1; else if(_sx==="G") mat64G[i][j] += 1;
       names64[i][j].push(name6);
       if(_sx==="F") names64F[i][j].push(name6); else if(_sx==="G") names64G[i][j].push(name6);
+      used4Targets.add(mate4Key);
       nMatch64++;
     }
   }
@@ -2424,7 +2691,7 @@ function buildMatrices(){
     n6, n5, n4,
     nMatch65, nMatch54, nMatch64,
     nAmbig65, nAmbig54, nAmbig64,
-    nMiss65, nMiss54, nMiss64,
+    nMiss65, nMiss54, nMiss64, nDuplicate65, nDuplicate54, nDuplicate64,
     viaNPD65, viaNPS65, viaNP65, viaSwap65, viaNP165,
     viaNPD54, viaNPS54, viaNP54, viaSwap54, viaNP154,
     viaNPD64, viaNPS64, viaNP64, viaSwap64, viaNP164
@@ -2472,9 +2739,13 @@ function toSankey3(M65, M54){
 function renderAll(){
   const res = buildMatrices();
   if(!res){
+    LAST_RES = null;
+    renderQuality(null);
+    renderDashboard(null);
     renderFlowTable(null);
     return;
   }
+  LAST_RES = res;
 
   const {
     has5,
@@ -2483,7 +2754,7 @@ function renderAll(){
     n6, n5, n4,
     nMatch65, nMatch54, nMatch64,
     nAmbig65, nAmbig54, nAmbig64,
-    nMiss65, nMiss54, nMiss64,
+    nMiss65, nMiss54, nMiss64, nDuplicate65, nDuplicate54, nDuplicate64,
     viaNPD65, viaNPS65, viaNP65, viaSwap65, viaNP165,
     viaNPD54, viaNPS54, viaNP54, viaSwap54, viaNP154,
     viaNPD64, viaNPS64, viaNP64, viaSwap64, viaNP164
@@ -2492,9 +2763,9 @@ function renderAll(){
   if(has5){
     diag.innerHTML = `
       6e: <b>${n6}</b> · 5e: <b>${n5}</b> · 4e: <b>${n4}</b><br/>
-      Appariements 6e→5e: <b>${nMatch65}</b> (homonymies: <span class="warn">${nAmbig65}</span>, introuvables: ${nMiss65}) —
+      Appariements 6e→5e: <b>${nMatch65}</b> (homonymies: <span class="warn">${nAmbig65}</span>, introuvables: ${nMiss65}, doublons exclus: ${nDuplicate65}) —
       Règles: NP+DATE=${viaNPD65} · NP+SEXE=${viaNPS65} · NP=${viaNP65} · swap=${viaSwap65} · NP+1er=${viaNP165}<br/>
-      Appariements 5e→4e: <b>${nMatch54}</b> (homonymies: <span class="warn">${nAmbig54}</span>, introuvables: ${nMiss54}) —
+      Appariements 5e→4e: <b>${nMatch54}</b> (homonymies: <span class="warn">${nAmbig54}</span>, introuvables: ${nMiss54}, doublons exclus: ${nDuplicate54}) —
       Règles: NP+DATE=${viaNPD54} · NP+SEXE=${viaNPS54} · NP=${viaNP54} · swap=${viaSwap54} · NP+1er=${viaNP154}
     `;
 
@@ -2526,7 +2797,7 @@ function renderAll(){
   } else {
     diag.innerHTML = `
       6e: <b>${n6}</b> · 4e: <b>${n4}</b> (5e absent)<br/>
-      Appariements 6e→4e: <b>${nMatch64}</b> (homonymies: <span class="warn">${nAmbig64}</span>, introuvables: ${nMiss64}) —
+      Appariements 6e→4e: <b>${nMatch64}</b> (homonymies: <span class="warn">${nAmbig64}</span>, introuvables: ${nMiss64}, doublons exclus: ${nDuplicate64}) —
       Règles: NP+DATE=${viaNPD64} · NP+SEXE=${viaNPS64} · NP=${viaNP64} · swap=${viaSwap64} · NP+1er=${viaNP164}
     `;
 
@@ -2556,6 +2827,8 @@ function renderAll(){
     }], {margin:{l:10,r:10,t:30,b:10}, title:"Garçons — 6e → 4e"}, {displaylogo:false});
   }
   renderFlowTable(res);
+  renderQuality(res);
+  renderDashboard(res);
   // === KPI cards ===
   (function(){
     const wrap = document.getElementById('kpiWrap');
@@ -2798,10 +3071,19 @@ if(btnExportSel){
   });
 }
 
-btnRun.addEventListener("click", renderAll);
+btnRun.addEventListener("click", ()=>{
+  setBusy(btnRun, true, 'Génération…');
+  requestAnimationFrame(()=>{
+    try { renderAll(); }
+    finally { requestAnimationFrame(()=>setBusy(btnRun, false)); }
+  });
+});
 
 /* Export : 3 images PNG (global, F, G) */
 btnExport.addEventListener("click", async ()=>{
+  if(!plotGlobal?.data?.length){ alert('Génère les Sankey avant de les exporter.'); return; }
+  setBusy(btnExport, true, 'Export…');
+  try{
   const name = (s)=>s.replace(/[^\w\-]+/g,"_");
   const title = document.querySelector('#plotGlobal .gtitle')?.textContent || '';
   const is64 = title.includes('6e → 4e');
@@ -2809,6 +3091,7 @@ btnExport.addEventListener("click", async ()=>{
   await Plotly.downloadImage(plotGlobal, {format:'png', filename:name(`Sankey_global_${suffix}`)});
   await Plotly.downloadImage(plotF,      {format:'png', filename:name(`Sankey_Filles_${suffix}`)});
   await Plotly.downloadImage(plotG,      {format:'png', filename:name(`Sankey_Garcons_${suffix}`)});
+  } finally { setBusy(btnExport, false); }
 });
 
 // ===== Reset des filtres =====
@@ -2910,6 +3193,11 @@ if (btnPdfEtab) {
 </script>
 <script>
 (function(){
+  try {
+    const savedThresholds = JSON.parse(localStorage.getItem(LS_THRESHOLDS)||'null');
+    if(savedThresholds) applyThresholds(savedThresholds, false);
+  } catch(_) {}
+  try { MATCH_OVERRIDES = JSON.parse(localStorage.getItem(LS_OVERRIDES)||'{}') || {}; } catch(_) { MATCH_OVERRIDES = {}; }
   const key = 'longinat-theme';
   const saved = localStorage.getItem(key);
   if (saved) {
@@ -2931,4 +3219,3 @@ if (btnPdfEtab) {
 </script>
 </body>
 </html>
-

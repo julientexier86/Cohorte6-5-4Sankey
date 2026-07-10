@@ -1,0 +1,7 @@
+{
+  "name": "evalnat-suivi-cohorte",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/matching.test.js"
+  }
+}
