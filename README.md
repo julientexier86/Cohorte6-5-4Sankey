@@ -1,5 +1,7 @@
 # EvalNat — Suivi de cohorte
 
+https://julientexier86.github.io/Cohorte6-5-4Sankey/
+
 Application web autonome pour suivre les trajectoires d'élèves entre la 6e, la 5e et la 4e à partir des exports des évaluations nationales. Elle relie les fichiers de cohortes, classe les résultats dans trois niveaux et restitue les évolutions sous forme de Sankey, tableaux et tableau de bord.
 
 > **Confidentialité :** les fichiers sont lus et traités dans le navigateur. L'application ne possède ni serveur, ni compte utilisateur, ni envoi de données élèves.
